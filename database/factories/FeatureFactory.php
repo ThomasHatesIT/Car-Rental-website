@@ -21,7 +21,6 @@ class FeatureFactory extends Factory
     'GPS',
     'Electric',
     'Bluetooth',
-    '7 Seater',
     'Solar Powered',
     'Heated Seats',
     'Leather Interior',

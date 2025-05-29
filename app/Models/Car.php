@@ -10,31 +10,31 @@ class Car extends Model
     /** @use HasFactory<\Database\Factories\CarFactory> */
     use HasFactory;
 
-      protected $fillable = [
-        'make',
-        'model',
-        'year',
-        'color',
-        'license_plate',
-        'vin',
-        'transmission',
-        'fuel_type',
-        'seats',
-        'doors',
-        'price_per_day',
-        'mileage',
-        'description',
-       
-        'images',
-        'status',
-        'is_featured',
-    ];
+        protected $fillable = [
+            'make',
+            'model',
+            'year',
+            'color',
+            'license_plate',
+            'vin',
+            'transmission',
+            'fuel_type',
+            'seats',
+            'doors',
+            'price_per_day',
+            'mileage',
+            'description',
+        
+            'images',
+            'status',
+            'is_featured',
+        ];
 
     protected function casts(): array
     {
         return [
             'price_per_day' => 'decimal:2',
-            'features' => 'array',
+           
             'images' => 'array',
             'is_featured' => 'boolean',
         ];
