@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\Feature;
 class Car extends Model
 {
     /** @use HasFactory<\Database\Factories\CarFactory> */
@@ -24,7 +24,7 @@ class Car extends Model
         'price_per_day',
         'mileage',
         'description',
-        'features',
+       
         'images',
         'status',
         'is_featured',
@@ -39,6 +39,11 @@ class Car extends Model
             'is_featured' => 'boolean',
         ];
     }
+
+    public function features()
+{
+    return $this->belongsToMany(Feature::class);
+}
 
     // Relationships
     public function bookings(): HasMany

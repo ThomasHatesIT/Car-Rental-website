@@ -26,7 +26,7 @@ return new class extends Migration
             $table->decimal('price_per_day', 8, 2);
             $table->integer('mileage')->default(0);
             $table->text('description')->nullable();
-            $table->text('features')->nullable(); // JSON field for car features
+       
             $table->json('images')->nullable(); // Array of image URLs
             $table->enum('status', ['available', 'rented', 'maintenance', 'out_of_service'])->default('available');
             $table->boolean('is_featured')->default(false);
