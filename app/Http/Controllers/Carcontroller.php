@@ -9,13 +9,16 @@ class Carcontroller extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function home()
+ public function home() // Or whatever your method is
 {
-    $cars = Car::where('status', 'available')->get();
-    
-    return view('user.home', [
-        'cars' => $cars
-    ]);
+    // Eager load the necessary relationships
+    $cars = Car::with(['featuredImage', 'images']) // Eager load both in case featuredImage is null
+                 ->where('status', 'available') // Only show available cars
+                 // ->where('is_featured', true) // If you only want "featured" cars on the homepage
+                 ->take(10) // Example: limit the number of cars for the swiper
+                 ->get();
+
+    return view('user.home', compact('cars'));
 }
     public function index()
     {

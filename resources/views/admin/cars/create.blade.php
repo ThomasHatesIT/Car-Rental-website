@@ -9,7 +9,7 @@
     <nav class="flex mb-8" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
-                <a href="" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                <a href="/admin/cars" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0M15 17a2 2 0 104 0M9 17h6"></path>
@@ -40,45 +40,46 @@
         @csrf
         
   
-    <!-- Vehicle Images Section -->
-    <div class="space-y-6">
-        <div class="border-b border-gray-200 pb-4">
-            <h3 class="text-lg font-medium text-gray-900">Vehicle Images</h3>
-            <p class="mt-1 text-sm text-gray-500">Upload high-quality photos of the vehicle (max 5 images).</p>
-        </div>
+   <!-- Vehicle Images Section -->
+<div class="space-y-6">
+    <div class="border-b border-gray-200 pb-4">
+        <h3 class="text-lg font-medium text-gray-900">Vehicle Images</h3>
+        <p class="mt-1 text-sm text-gray-500">Upload high-quality photos of the vehicle (max 5 images).</p>
+    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="image-upload-container">
-            <!-- Upload Box -->
-            <div class="relative group">
-                <div
-                    id="upload-box"
-                    class="h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col justify-center items-center hover:border-blue-500 transition duration-200 bg-gray-50 cursor-pointer"
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="image-upload-container">
+        <!-- Upload Box -->
+        <div class="relative group"> {{-- This div wraps the upload box itself --}}
+            <div
+                id="upload-box"
+                class="h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col justify-center items-center hover:border-blue-500 transition duration-200 bg-gray-50 cursor-pointer"
+            >
+                <svg class="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-600">Click or Drag & Drop Images (max 5)</p>
+               <input
+                    type="file"
+                    name="images[]"
+                    id="image-input"
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    accept="image/*"
+                    multiple
                 >
-                    <svg class="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <p class="mt-2 text-sm text-gray-600">Click or Drag & Drop Images (max 5)</p>
-                    <input
-                        type="file"
-                        name="images[]"
-                        id="image-input"
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        accept="image/*"
-                        multiple
-                    >
-                </div>
             </div>
         </div>
-
-        <p class="text-xs text-gray-500">Supports JPG, PNG up to 5MB each. First image will be used as featured.</p>
-
-        @error('images')
-            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-        @enderror
-        @error('images.*')
-            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-        @enderror
+        {{-- Image previews will be inserted here by JavaScript before the upload-box's parent --}}
     </div>
+
+    <p class="text-xs text-gray-500">Supports JPG, PNG up to 5MB each. First image will be used as featured.</p>
+
+    @error('images')
+        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+    @enderror
+    @error('images.*')
+        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+    @enderror
+</div>
 
         <!-- Section 2: Basic Information -->
         <div class="space-y-6">
@@ -381,156 +382,159 @@
 
 
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const imageUploadContainer = document.getElementById('image-upload-container');
-    const fileInput = document.getElementById('image-input');
-    const uploadBox = document.getElementById('upload-box');
+    const fileInput = document.getElementById('image-input'); // The hidden file input
+    const uploadBoxParent = document.getElementById('upload-box').parentElement; // The div wrapping the upload box
+    const uploadBoxItself = document.getElementById('upload-box'); // The actual clickable/droppable area
     const maxImages = 5;
 
-    let dt = new DataTransfer();
+    let dt = new DataTransfer(); // Our single source of truth for files
 
-    function updatePreviews() {
-        // Remove all existing preview divs (except the upload box)
+    function createFileListItem(file) {
+        // Helper to check if a file already exists in dt.items
+        // Comparing by name, lastModified, and size for better uniqueness
+        for (let i = 0; i < dt.items.length; i++) {
+            const existingFile = dt.items[i].getAsFile();
+            if (existingFile && existingFile.name === file.name &&
+                existingFile.lastModified === file.lastModified &&
+                existingFile.size === file.size) {
+                return true; // File exists
+            }
+        }
+        return false; // File does not exist
+    }
+
+    function addFilesToDataTransfer(filesToAdd) {
+        for (const file of filesToAdd) {
+            if (!file.type.startsWith('image/')) continue; // Only allow image types
+            if (dt.items.length < maxImages && !createFileListItem(file)) {
+                dt.items.add(file);
+            }
+        }
+        // CRITICAL: Synchronize the actual file input with our DataTransfer object
+        fileInput.files = dt.files;
+        updatePreviewsAndUploadBox();
+    }
+
+    function updatePreviewsAndUploadBox() {
+        // 1. Clear existing previews (but not the upload box itself initially)
         const existingPreviews = imageUploadContainer.querySelectorAll('.image-preview');
         existingPreviews.forEach(el => el.remove());
 
-        const files = dt.files;
-
-        Array.from(files).slice(0, maxImages).forEach(file => {
-            if (!file.type.startsWith('image/')) return;
-
+        // 2. Render new previews from dt.files
+        Array.from(dt.files).forEach(file => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const previewDiv = document.createElement('div');
-                previewDiv.className = 'relative group image-preview';
+                previewDiv.className = 'relative group image-preview h-40'; // Ensure consistent height
 
                 previewDiv.innerHTML = `
-                    <img src="${e.target.result}" alt="Preview" class="h-40 w-full object-cover rounded-lg border border-gray-200">
-                    <button type="button" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" title="Remove image">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    <img src="${e.target.result}" alt="${file.name}" class="h-full w-full object-cover rounded-lg border border-gray-200">
+                    <button type="button" data-filename="${file.name}" data-lastmodified="${file.lastModified}" data-filesize="${file.size}"
+                            class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 shadow-md hover:bg-red-700"
+                            title="Remove image">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                    <span class="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">${file.name}</span>
+                    <span class="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 rounded truncate max-w-[calc(100%-0.5rem)]" title="${file.name}">
+                        ${file.name}
+                    </span>
                 `;
+                // Insert previews before the upload box's parent div
+                imageUploadContainer.insertBefore(previewDiv, uploadBoxParent);
 
-                imageUploadContainer.insertBefore(previewDiv, uploadBox.parentElement);
+                previewDiv.querySelector('button').addEventListener('click', function() {
+                    const fileName = this.dataset.filename;
+                    const fileLastModified = parseInt(this.dataset.lastmodified);
+                    const fileSize = parseInt(this.dataset.filesize);
 
-                previewDiv.querySelector('button').addEventListener('click', () => {
+                    const newDt = new DataTransfer();
                     for (let i = 0; i < dt.items.length; i++) {
                         const f = dt.items[i].getAsFile();
-                        if (f.name === file.name && f.lastModified === file.lastModified) {
-                            dt.items.remove(i);
-                            break;
+                        if (f.name !== fileName || f.lastModified !== fileLastModified || f.size !== fileSize) {
+                            newDt.items.add(f);
                         }
                     }
-                    fileInput.files = dt.files;
-                    updatePreviews();
+                    dt = newDt; // Update our source of truth
+                    fileInput.files = dt.files; // Synchronize the actual file input
+                    updatePreviewsAndUploadBox(); // Re-render
                 });
             };
             reader.readAsDataURL(file);
         });
 
-        uploadBox.style.pointerEvents = (files.length >= maxImages) ? 'none' : 'auto';
-        uploadBox.style.opacity = (files.length >= maxImages) ? '0.5' : '1';
+        // 3. Control visibility/state of the upload box
+        if (dt.files.length >= maxImages) {
+            uploadBoxParent.style.display = 'none'; // Hide the upload box div if max images reached
+        } else {
+            uploadBoxParent.style.display = 'block'; // Show it otherwise
+        }
     }
 
+    // Event listener for the hidden file input
     fileInput.addEventListener('change', function(e) {
-        for (const file of e.target.files) {
-            let exists = false;
-            for (let i = 0; i < dt.items.length; i++) {
-                const existingFile = dt.items[i].getAsFile();
-                if (existingFile.name === file.name && existingFile.lastModified === file.lastModified) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists && dt.items.length < maxImages) {
-                dt.items.add(file);
-            }
-        }
-        fileInput.files = dt.files;
-        updatePreviews();
-        fileInput.value = '';
+        addFilesToDataTransfer(e.target.files);
+        // DO NOT RESET: e.target.value = ''; // This was the original problem!
     });
 
-    // Drag & drop functionality
-    ['dragenter', 'dragover'].forEach(event => {
-        uploadBox.addEventListener(event, e => {
+    // Drag & drop functionality for the visible uploadBoxItself
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadBoxItself.addEventListener(eventName, e => {
             e.preventDefault();
-            uploadBox.classList.add('border-blue-500');
+            e.stopPropagation();
+            if (dt.items.length < maxImages) {
+                uploadBoxItself.classList.add('border-blue-500', 'bg-blue-50');
+            }
         });
     });
 
-    ['dragleave', 'drop'].forEach(event => {
-        uploadBox.addEventListener(event, e => {
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadBoxItself.addEventListener(eventName, e => {
             e.preventDefault();
-            uploadBox.classList.remove('border-blue-500');
+            e.stopPropagation();
+            uploadBoxItself.classList.remove('border-blue-500', 'bg-blue-50');
         });
     });
 
-    uploadBox.addEventListener('drop', e => {
-        const droppedFiles = e.dataTransfer.files;
-        for (const file of droppedFiles) {
-            if (dt.items.length >= maxImages) break;
+    uploadBoxItself.addEventListener('drop', function(e) {
+        // e.dataTransfer.files contains the dropped files
+        addFilesToDataTransfer(e.dataTransfer.files);
+    });
 
-            let exists = false;
-            for (let i = 0; i < dt.items.length; i++) {
-                const existingFile = dt.items[i].getAsFile();
-                if (existingFile.name === file.name && existingFile.lastModified === file.lastModified) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                dt.items.add(file);
-            }
+    // Make/Color Custom Input Toggle (Keep this if you have it elsewhere)
+    const makeSelect = document.getElementById('make');
+    if (makeSelect) {
+        makeSelect.addEventListener('change', function() {
+            const customMakeContainer = document.getElementById('custom-make-container');
+            customMakeContainer.style.display = this.value === 'other' ? 'block' : 'none';
+        });
+        // Trigger change on load if 'other' is pre-selected by old('make')
+        if (makeSelect.value === 'other') {
+            makeSelect.dispatchEvent(new Event('change'));
         }
-
-        fileInput.files = dt.files;
-        updatePreviews();
-    });
-
-    // Initialize empty preview
-    updatePreviews();
-
-    // Make/Color Custom Input Toggle
-    document.getElementById('make').addEventListener('change', function() {
-        const customMakeContainer = document.getElementById('custom-make-container');
-        customMakeContainer.style.display = this.value === 'other' ? 'block' : 'none';
-    });
-
-    document.getElementById('color').addEventListener('change', function() {
-        const customColorContainer = document.getElementById('custom-color-container');
-        customColorContainer.style.display = this.value === 'custom' ? 'block' : 'none';
-    });
-
-    // Featured image preview (single file)
-    const singleImageInput = document.getElementById('image');
-    if (singleImageInput) {
-        singleImageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.createElement('img');
-                    preview.src = e.target.result;
-                    preview.className = 'mt-4 h-32 w-32 object-cover rounded-lg mx-auto';
-
-                    const uploadArea = document.querySelector('.border-dashed');
-                    const existingPreview = uploadArea.querySelector('img');
-                    if (existingPreview) {
-                        existingPreview.remove();
-                    }
-                    uploadArea.appendChild(preview);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
     }
+
+
+    const colorSelect = document.getElementById('color');
+    if (colorSelect) {
+        colorSelect.addEventListener('change', function() {
+            const customColorContainer = document.getElementById('custom-color-container');
+            customColorContainer.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+        // Trigger change on load if 'custom' is pre-selected by old('color')
+        if (colorSelect.value === 'custom') {
+            colorSelect.dispatchEvent(new Event('change'));
+        }
+    }
+
+
+    // Initial call to set up previews (e.g., if there are `old('images')` - though handling `old()` for files is tricky)
+    updatePreviewsAndUploadBox();
 });
 </script>
+
 
 @endsection

@@ -116,11 +116,19 @@
                     <div class="swiper-slide">
                         <div class="h-full bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
                             <div class="w-full h-48 overflow-hidden">
-                                <img 
-                                    src="{{ asset(json_decode($car->images)[0]) }}" 
-                                    alt="{{ $car->make }} {{ $car->model }}" 
-                                    class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                                >
+                                    @if ($car->images && $car->images->isNotEmpty())
+                                  <img
+                    src="{{ asset('storage/' . $car->images->first()->path) }}" {{-- Get path from first CarImage object --}}
+                    alt="{{ $car->make }} {{ $car->model }}"
+                    class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                >  @else
+                {{-- Placeholder image --}}
+                <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {{-- SVG Path --}}
+                    </svg>
+                </div>
+            @endif
                             </div>
                             <div class="p-6 flex-grow flex flex-col">
                                 <div class="flex justify-between items-start mb-2">

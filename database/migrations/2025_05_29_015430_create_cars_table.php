@@ -27,7 +27,7 @@ return new class extends Migration
             $table->integer('mileage')->default(0);
             $table->text('description')->nullable();
        
-            $table->json('images')->nullable(); // Array of image URLs
+
             $table->enum('status', ['available', 'rented', 'maintenance', 'out_of_service'])->default('available');
             $table->boolean('is_featured')->default(false);
             $table->timestamps();
