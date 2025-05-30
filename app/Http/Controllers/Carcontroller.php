@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Car;
+use App\Models\Feature;
+use App\Models\CarImage; // Assuming this is your CarImage model
 class Carcontroller extends Controller
 {
     /**
@@ -14,7 +16,7 @@ class Carcontroller extends Controller
     // Eager load the necessary relationships
     $cars = Car::with(['featuredImage', 'images']) // Eager load both in case featuredImage is null
                  ->where('status', 'available') // Only show available cars
-                 // ->where('is_featured', true) // If you only want "featured" cars on the homepage
+                 ->where('is_featured', true) // If you only want "featured" cars on the homepage
                  ->take(10) // Example: limit the number of cars for the swiper
                  ->get();
 
@@ -45,13 +47,13 @@ class Carcontroller extends Controller
      * Display the specified resource.
      */
     public function show(string $id)
-    {
-        $car = Car::findOrFail($id);
+{
+    $car = Car::with(['features', 'featuredImage', 'images'])->findOrFail($id);
 
-        return view('user.show', [
-           'car' => $car
-        ]);
-    }
+    return view('user.show', [
+        'car' => $car
+    ]);
+}
 
     /**
      * Show the form for editing the specified resource.

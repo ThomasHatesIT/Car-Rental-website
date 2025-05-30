@@ -17,34 +17,44 @@
 
         <!-- Car Header -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <!-- Car Images -->
+            <!-- Main Car Image -->
             <div class="relative">
-                <div class="aspect-w-16 aspect-h-9 bg-gray-200">
-                    <img src="{{ asset('images/img1.jpg') }}" 
-                         alt="{{ $car->make }} {{ $car->model }}" 
-                         class="w-full h-96 object-cover">
-                </div>
-                    
-                    <!-- Featured Badge -->
-                    @if($car->is_featured)
-                        <div class="absolute top-4 left-4">
-                            <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                                Featured
-                            </span>
-                        </div>
-                    @endif
-                    
-                    <!-- Status Badge -->
-                    <div class="absolute top-4 right-4">
-                        <span class="px-3 py-1 rounded-full text-sm font-semibold
-                            @if($car->status === 'available') bg-green-500 text-white
-                            @elseif($car->status === 'rented') bg-red-500 text-white
-                            @elseif($car->status === 'maintenance') bg-yellow-500 text-white
-                            @else bg-gray-500 text-white @endif">
-                            {{ ucfirst(str_replace('_', ' ', $car->status)) }}
+                @if($car->images->isNotEmpty())
+                    @php
+                        $mainDisplayImage = $car->images->first();
+                    @endphp
+                    <div class="aspect-w-16 aspect-h-9 bg-gray-200">
+                        <img src="{{ asset('storage/' . $mainDisplayImage->path) }}"
+                             alt="{{ $car->make }} {{ $car->model }} - Main View"
+                             class="w-full h-full object-cover"> {{-- h-full ensures it fills the aspect ratio container --}}
+                    </div>
+                @else
+                    {{-- Placeholder if no images --}}
+                    <div class="aspect-w-16 aspect-h-9 bg-gray-300 flex items-center justify-center">
+                        <svg class="w-20 h-20 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                @endif
+
+                <!-- Featured Badge -->
+                @if($car->is_featured)
+                    <div class="absolute top-4 left-4">
+                        <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                            Featured
                         </span>
                     </div>
+                @endif
+
+                <!-- Status Badge -->
+                <div class="absolute top-4 right-4">
+                    <span class="px-3 py-1 rounded-full text-sm font-semibold
+                        @if($car->status === 'available') bg-green-500 text-white
+                        @elseif($car->status === 'rented') bg-red-500 text-white
+                        @elseif($car->status === 'maintenance') bg-yellow-500 text-white
+                        @else bg-gray-500 text-white @endif">
+                        {{ ucfirst(str_replace('_', ' ', $car->status)) }}
+                    </span>
                 </div>
+            </div>
 
             <!-- Car Details -->
             <div class="p-6">
@@ -116,25 +126,38 @@
                 </div>
 
                 <!-- Features -->
-                @if($car->features)
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Features</h3>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-gray-700">{{ $car->features }}</p>
-                        </div>
-                    </div>
-                @endif
+             @if($car->features->isNotEmpty())
+    <div class="mb-10">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Car Features</h3>
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-gray-700">
+                @foreach($car->features as $feature)
+                    <li class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                             viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>{{ $feature->name }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+@endif
 
-                <!-- Additional Images -->
-                @if($car->images && count(json_decode($car->images)) > 1)
+
+                <!-- Additional Images (Gallery) -->
+                @if($car->images && $car->images->count() > 1)
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">More Photos</h3>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            @foreach(array_slice(json_decode($car->images), 1) as $image)
-                                <div class="aspect-w-1 aspect-h-1">
-                                    <img src="{{ asset('images/' . $image) }}" 
-                                         alt="{{ $car->make }} {{ $car->model }}" 
-                                         class="w-full h-32 object-cover rounded-lg">
+                            {{-- Slice the collection to get all images *except the first one* --}}
+                            @foreach($car->images->slice(1) as $imageModel)
+                                <div class="aspect-w-1 aspect-h-1"> {{-- Or aspect-square. Requires @tailwindcss/aspect-ratio --}}
+                                    <img src="{{ asset('storage/' . $imageModel->path) }}"
+                                         alt="{{ $car->make }} {{ $car->model }} - Additional Photo"
+                                         class="w-full h-full object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow">
                                 </div>
                             @endforeach
                         </div>
@@ -148,9 +171,9 @@
                             <h3 class="text-xl font-semibold text-gray-900">Ready to book this car?</h3>
                             <p class="text-gray-600">Available for ${{ number_format($car->price_per_day, 2) }} per day</p>
                         </div>
-                        
+
                         @if($car->status === 'available')
-                            <a href="" 
+                            <a href="" {{-- Add your booking route here --}}
                                class="inline-flex items-center justify-center px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -158,7 +181,7 @@
                                 Book Now
                             </a>
                         @else
-                            <button disabled 
+                            <button disabled
                                     class="inline-flex items-center justify-center px-8 py-3 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0h-2m9-5a9 9 0 11-18 0 9 9 0 0118 0z"></path>

@@ -92,7 +92,7 @@
         <!-- Available Cars Section -->
         <div class="mb-16">
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900">Available Cars</h2>
+                <h2 class="text-3xl font-bold text-gray-900">Featured Cars</h2>
                 <div class="flex space-x-4">
                                       <button class="car-swiper-prev p-3 rounded-full bg-blue-600 shadow-lg hover:bg-blue-700 transition duration-300 cursor-pointer">
     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
