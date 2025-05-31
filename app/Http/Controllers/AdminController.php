@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB; //  For database transactions
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule; // For more complex validation rules if needed
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 use Illuminate\Support\Facades\Validator;
 
@@ -18,6 +20,13 @@ class AdminController extends Controller
 
 
 {
+
+     public function __construct(){
+       
+        $this->middleware('permission:view admin dashboard')->only(['adminHome', 'index', 'carCreate']);
+
+  
+    }
      public function adminHome(){
 
             
@@ -35,6 +44,12 @@ class AdminController extends Controller
                 ]);
 
         }
+
+         public function carShow(string $id)
+    {
+        $car = Car::with(['features', 'featuredImage', 'images'])->findOrFail($id);
+        return view('admin.cars.show', compact('car')); // Pass 'car' not an array with 'car' key
+    }
 
         public function carCreate(){
 

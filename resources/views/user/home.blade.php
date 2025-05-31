@@ -25,7 +25,7 @@
             </p>
 
             <!-- Simplified Search Form -->
-            <form action="{{ route('cars.index') }}" method="GET" class="mt-10 max-w-xl mx-auto sm:flex sm:gap-4">
+            <form action="" method="GET" class="mt-10 max-w-xl mx-auto sm:flex sm:gap-4">
                 <div class="flex-grow min-w-0">
                     <label for="search_keyword" class="sr-only">Search cars</label>
                     <input type="text" name="search" id="search_keyword"
@@ -74,47 +74,54 @@
             <div class="swiper car-swiper -mx-4 sm:mx-0"> {{-- Negative margin for full-bleed on mobile --}}
                 <div class="swiper-wrapper pb-12"> {{-- Padding bottom for pagination --}}
                     @foreach ($cars as $car)
-                    <div class="swiper-slide px-2 sm:px-0"> {{-- Padding for spacing between slides on mobile --}}
-                        <div class="h-full bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 flex flex-col group">
-                            <a href="{{ route('cars.show', $car->id) }}" class="block">
-                                <div class="w-full h-56 sm:h-64 overflow-hidden">
-                                    @if ($car->images && $car->images->isNotEmpty())
-                                        <img src="{{ asset('storage/' . $car->images->first()->path) }}"
-                                             alt="{{ $car->make }} {{ $car->model }}"
-                                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
-                                    @else
-                                        <div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
-                                            <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+               {{-- Inside the @foreach ($cars as $car) loop --}}
+                                    <div class="swiper-slide px-2 sm:px-0">
+                                        <div class="h-full bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 flex flex-col group">
+                                            <a href="{{ route('cars.show', $car->id) }}" class="block">
+                                                <div class="w-full h-56 sm:h-64 overflow-hidden">
+                                                    @if ($car->images && $car->images->isNotEmpty())
+                                                        <img src="{{ asset('storage/' . $car->images->first()->path) }}"
+                                                            alt="{{ $car->make }} {{ $car->model }}"
+                                                            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                                    @else
+                                                        <div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                                            <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </a>
+                                            <div class="p-5 sm:p-6 flex-grow flex flex-col">
+                                                <div class="flex justify-between items-start mb-2">
+                                                    <h3 class="text-xl font-semibold text-gray-900">
+                                                        <a href="{{ route('cars.show', $car->id) }}" class="hover:text-blue-600 transition-colors">{{ $car->make }} {{ $car->model }}</a>
+                                                    </h3>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-3">
+                                                    {{ $car->year }} • {{ ucfirst($car->color ?? 'N/A') }} • {{ ucfirst($car->transmission ?? 'N/A') }}
+                                                </p>
+
+                                                {{-- MODIFICATION START --}}
+                                                <div class="text-gray-700 text-sm mb-4 flex-grow relative overflow-hidden" style="height: 4.5rem;"> {{-- Adjust height as needed (e.g., 3 lines) --}}
+                                                    <p class="absolute inset-0"> {{-- This p tag is for the actual text --}}
+                                                        {{ $car->description }}
+                                                    </p>
+                                                    {{-- Optional: Add a fade-out effect if text overflows strongly --}}
+                                                    {{-- <div class="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-white to-transparent pointer-events-none"></div> --}}
+                                                </div>
+                                                {{-- MODIFICATION END --}}
+
+                                                <div class="flex justify-between items-center mt-auto pt-4 border-t border-gray-200">
+                                                    <p class="text-xl font-bold text-blue-600">
+                                                        ${{ number_format($car->price_per_day, 2) }}
+                                                        <span class="text-sm font-normal text-gray-500">/day</span>
+                                                    </p>
+                                                    <a href="{{ route('cars.show', $car->id) }}" class="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+                                                        View Details
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </div>
-                                    @endif
-                                </div>
-                            </a>
-                            <div class="p-5 sm:p-6 flex-grow flex flex-col">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h3 class="text-xl font-semibold text-gray-900">
-                                        <a href="{{ route('cars.show', $car->id) }}" class="hover:text-blue-600 transition-colors">{{ $car->make }} {{ $car->model }}</a>
-                                    </h3>
-                                    {{-- Type removed from here to simplify, search can handle it --}}
-                                </div>
-                                <p class="text-sm text-gray-600 mb-3">
-                                    {{ $car->year }} • {{ ucfirst($car->color ?? 'N/A') }} • {{ ucfirst($car->transmission ?? 'N/A') }}
-                                </p>
-                                {{-- Rating removed for brevity, can be added back if crucial --}}
-                                <p class="text-gray-700 text-sm mb-4 flex-grow">
-                                    {{ Str::limit($car->description, 70) }}
-                                </p>
-                                <div class="flex justify-between items-center mt-auto pt-4 border-t border-gray-200">
-                                    <p class="text-xl font-bold text-blue-600">
-                                        ${{ number_format($car->price_per_day, 2) }}
-                                        <span class="text-sm font-normal text-gray-500">/day</span>
-                                    </p>
-                                    <a href="{{ route('cars.show', $car->id) }}" class="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
-                                        View Details
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                    </div>
                     @endforeach
                 </div>
                 <div class="swiper-pagination mt-8 text-center"></div>
