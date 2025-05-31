@@ -35,15 +35,17 @@ class AdminController extends Controller
 
         }
 
-        public function index(){
+     public function index()
+{
+    $cars = Car::with('featuredImage', 'images')
+               ->latest() // Orders by 'created_at' DESC
+               ->get();
 
-            $cars = Car::with('featuredImage', 'images')->get();
+    return view('admin.cars.index', [
+        'cars' => $cars
+    ]);
+}
 
-                return view('admin.cars.index', [
-                    'cars' => $cars
-                ]);
-
-        }
 
          public function carShow(string $id)
     {

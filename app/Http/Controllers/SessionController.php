@@ -29,14 +29,14 @@ class SessionController extends Controller
 
             // Check if the user has the 'admin' role
             // This assumes your User model uses Spatie's HasRoles trait
-            if ($user && $user->hasRole('admin')) {
-                // Redirect admins to the admin dashboard
-                // Using route name is more robust than hardcoding URLs
-                return redirect()->intended(route('admin.dashboard'))->with('success', 'Logged in successfully! Welcome Admin.');
-            } else {
-                // Redirect other authenticated users to the homepage or their specific dashboard
-                return redirect()->intended('/')->with('success', 'Logged in successfully!');
-            }
+          if ($user && $user->hasRole('admin')) {
+    // Always redirect admins to dashboard, ignoring "intended"
+    return redirect()->route('admin.dashboard')->with('success', 'Logged in successfully! Welcome Admin.');
+} else {
+    // Let non-admins go to their intended page or home
+    return redirect()->intended('/')->with('success', 'Logged in successfully!');
+}
+
         }
 
         return back()->withErrors([

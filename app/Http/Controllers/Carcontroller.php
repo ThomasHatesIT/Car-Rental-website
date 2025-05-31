@@ -11,7 +11,12 @@ use Illuminate\Routing\Controller as BaseController; // <--- ADD THIS LINE
 class Carcontroller extends BaseController // <--- CHANGE 'Controller' to 'BaseController' (or ensure you use the FQN)
 {
 
-   
+    public function __construct(){
+       
+        $this->middleware('permission:edit cars')->only(['edit', 'update']);
+
+        $this->middleware('permission:delete cars')->only(['destroy']); 
+    }
 
     /**
      * Display a listing of the resource.
@@ -19,12 +24,7 @@ class Carcontroller extends BaseController // <--- CHANGE 'Controller' to 'BaseC
     public function home()
     {
         $cars = Car::with(['featuredImage', 'images'])
-                     ->where('stat public function __construct(){
-       
-        $this->middleware('permission:edit cars')->only(['edit', 'update']);
-
-        $this->middleware('permission:delete cars')->only(['destroy']); 
-    }us', 'available')
+                     ->where('status', 'available')
                      ->where('is_featured', true)
                      ->take(10)
                      ->get();
