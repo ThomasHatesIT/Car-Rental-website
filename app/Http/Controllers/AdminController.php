@@ -3,132 +3,105 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
-use App\Models\Feature; // Assuming you have a Feature model
-use App\Models\CarImage; // Assuming this is your CarImage model
+use App\Models\Feature;
+use App\Models\CarImage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; //  For database transactions
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule; // For more complex validation rules if needed
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str; // For Str::slug or similar for image names
 
 class AdminController extends Controller
-
-
-
 {
-
-     public function __construct(){
-       
-        $this->middleware('permission:view admin dashboard')->only(['adminHome', 'index', 'carCreate']);
-
-  
+    public function __construct(){
+        // Consider applying permissions to more methods like edit, update, destroy, carShow, carStore
+        $this->middleware('permission:view admin dashboard')->only(['adminHome']); // Only for dashboard
+        $this->middleware('permission:view cars')->only(['index', 'carShow']);
+        $this->middleware('permission:create cars')->only(['carCreate', 'carStore']);
+        $this->middleware('permission:edit cars')->only(['edit', 'update', 'setFeaturedImage']);
+        // Add $this->middleware('permission:delete cars')->only(['destroy']); when you implement it
     }
-     public function adminHome(){
 
-            
+    public function adminHome(){
+        return view('layouts.admin'); // This probably should be 'admin.dashboard' or similar
+    }
 
-                return view('layouts.admin');
-
-        }
-
-     public function index()
-{
-    $cars = Car::with('featuredImage', 'images')
-               ->latest() // Orders by 'created_at' DESC
-               ->get();
-
-    return view('admin.cars.index', [
-        'cars' => $cars
-    ]);
-}
-
-
-         public function carShow(string $id)
+    public function index()
     {
-        $car = Car::with(['features', 'featuredImage', 'images'])->findOrFail($id);
-        return view('admin.cars.show', compact('car')); // Pass 'car' not an array with 'car' key
+        $cars = Car::with(['featuredImage', 'images'])->latest()->paginate(10);
+        $totalCars = Car::count();
+        $availableCars = Car::where('status', 'available')->count();
+        $unavailableCars = $totalCars - $availableCars;
+
+        return view('admin.cars.index', compact('cars', 'totalCars', 'availableCars', 'unavailableCars'));
     }
 
-        public function carCreate(){
+    public function carShow(Car $car) // Use route model binding
+    {
+        $car->load(['features', 'featuredImage', 'images']);
+        return view('admin.cars.show', compact('car'));
+    }
 
- 
-                $cars = Car::all();
-                $features = Feature::all();
-                return view('admin.cars.create', [
-                    'car' => $cars,
-                    'features' =>  $features
-                ]);
+    public function carCreate(){
+        $features = Feature::orderBy('name')->get(); // Get all features
+        // Pass an empty car or null, not all cars
+        return view('admin.cars.create', compact('features'));
+    }
 
-        }
-
-                public function carStore(Request $request)
+    public function carStore(Request $request)
     {
         Log::info('carStore method initiated.');
-        Log::info('Incoming request data (excluding files initially):', $request->except(['_token', 'images'])); // Log form data
+        Log::info('Incoming request data (excluding files initially):', $request->except(['_token', 'images']));
         Log::info('Request has "images" field (form input name check):', ['has_images_field' => $request->has('images')]);
         Log::info('Request has uploaded files for "images":', ['has_uploaded_files' => $request->hasFile('images')]);
 
         if ($request->hasFile('images')) {
             $uploadedFiles = $request->file('images');
             $fileDetails = array_map(function ($file) {
-                return [
-                    'original_name' => $file->getClientOriginalName(),
-                    'size' => $file->getSize(),
-                    'mime_type' => $file->getClientMimeType(),
-                    'is_valid' => $file->isValid(),
-                ];
-            }, is_array($uploadedFiles) ? $uploadedFiles : [$uploadedFiles]); // Handle single or multiple files
+                return ['original_name' => $file->getClientOriginalName(), 'size' => $file->getSize(), 'mime_type' => $file->getClientMimeType(), 'is_valid' => $file->isValid()];
+            }, is_array($uploadedFiles) ? $uploadedFiles : [$uploadedFiles]);
             Log::info('Uploaded files details:', $fileDetails);
         } else {
             Log::info('No files were uploaded under the "images" field.');
         }
 
         $validated = $request->validate([
-            // Ensure images is treated as an array even if only one is uploaded.
-            // 'nullable' means the 'images' key can be absent or null. If present and not null, it must be an array.
-            'images' => 'nullable|array',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Max 5MB per image; 'required' if 'images' array has an item
-            'make' => 'required|string|max:255',
-            'custom_make' => 'nullable|required_if:make,other|string|max:255', // Required if 'make' is 'other'
+            'images' => 'nullable|array|max:5', // Max 5 NEW images can be uploaded at once
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'name' => ['nullable', 'string', 'max:255'],
+            'make' => 'required_without:custom_make|string|max:255',
+            'custom_make' => 'nullable|required_if:make,other|string|max:255',
             'model' => 'required|string|max:255',
-            'year' => 'required|integer|min:1900|max:' . (date('Y') + 1), // Adjusted min year
-            'color' => 'nullable|string|max:255',
-            'custom_color' => 'nullable|required_if:color,custom|string|max:255', // Required if 'color' is 'custom'
+            'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'color' => 'nullable|required_without:custom_color|string|max:255',
+            'custom_color' => 'nullable|required_if:color,custom|string|max:255',
             'license_plate' => ['required', 'string', 'max:10', Rule::unique('cars', 'license_plate')],
-            'vin' => ['required', 'string', 'size:17', Rule::unique('cars', 'vin')],
+            'vin' => ['required', 'string', 'alpha_num', 'size:17', Rule::unique('cars', 'vin')],
             'transmission' => 'required|in:manual,automatic',
             'fuel_type' => 'required|in:petrol,diesel,hybrid,electric',
-            'seats' => 'required|string', // Consider if this should be integer after normalization
-            'doors' => 'required|string', // Consider if this should be integer after normalization
+            'seats' => 'required|string|max:5',
+            'doors' => 'required|integer|min:2|max:5',
             'mileage' => 'required|integer|min:0',
             'features' => 'nullable|array',
-            'features.*' => 'integer|exists:features,id', // Ensure each feature ID exists in the 'features' table
+            'features.*' => 'integer|exists:features,id',
             'price_per_day' => 'required|numeric|min:0',
             'status' => 'required|in:available,rented,maintenance,out_of_service',
-            // 'is_featured' on the Car model itself (different from featured image)
             'is_featured' => 'nullable|boolean',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:5000',
         ]);
 
         Log::info('Validation passed. Validated data:', $validated);
 
-        // Use a database transaction to ensure all or nothing saves
         DB::beginTransaction();
-
         try {
-            // Determine actual make and color
             $make = ($validated['make'] ?? null) === 'other' ? ($validated['custom_make'] ?? $validated['make']) : ($validated['make'] ?? null);
             $color = ($validated['color'] ?? null) === 'custom' ? ($validated['custom_color'] ?? $validated['color']) : ($validated['color'] ?? null);
-
-            // Normalize seats and doors
-            $seats = ($validated['seats'] ?? '0') === '9+' ? 9 : (int)($validated['seats'] ?? 0);
-            $doors = (int)($validated['doors'] ?? 0);
+            $seats = ($validated['seats'] ?? '0') === '9+' ? 9 : (int)($validated['seats'] ?? 0); // Assuming 'seats' on DB is integer
+            $doors = (int)($validated['doors'] ?? 0); // Assuming 'doors' on DB is integer
 
             $carData = [
+                'name' => $validated['name'] ?? ($make . ' ' . $validated['model']), // Auto-generate name if not provided
                 'make' => $make,
                 'model' => $validated['model'],
                 'year' => $validated['year'],
@@ -142,97 +115,273 @@ class AdminController extends Controller
                 'mileage' => $validated['mileage'],
                 'price_per_day' => $validated['price_per_day'],
                 'status' => $validated['status'],
-                'is_featured' => $request->boolean('is_featured'), // Handles 'on', '1', true, etc.
-                'description' => $validated['description'] ?? null, // Ensure null if not present
+                'is_featured' => $request->boolean('is_featured'),
+                'description' => $validated['description'] ?? null,
             ];
 
             Log::info('Prepared car data for creation:', $carData);
-
-            // 1. Create the Car
             $car = Car::create($carData);
             Log::info("Car created successfully. Car ID: {$car->id}", $car->toArray());
 
-            // 2. Attach Features (if any)
             if (!empty($validated['features'])) {
                 Log::info("Attaching features to Car ID: {$car->id}", ['features_ids' => $validated['features']]);
                 $car->features()->attach($validated['features']);
                 Log::info('Features attached successfully.');
-            } else {
-                Log::info("No features to attach for Car ID: {$car->id}.");
             }
 
-            // 3. Handle and Store Images (if any)
-            if ($request->hasFile('images') && !empty($validated['images'])) { // Check validated['images'] too
+            if ($request->hasFile('images') && !empty($validated['images'])) {
                 Log::info("Starting image handling process for Car ID: {$car->id}.");
-                // Ensure $validated['images'] (which are the actual UploadedFile objects after validation) are iterated
-                foreach ($validated['images'] as $index => $image) {
-                    // Note: $request->file('images') returns the original array of UploadedFile objects.
-                    // $validated['images'] contains the UploadedFile objects that passed validation.
-                    // It's generally safer to iterate over $validated['images'].
-                    Log::info("Processing image index: {$index} for Car ID: {$car->id}");
-                    if ($image->isValid()) {
-                        Log::info("Image [{$index}] is valid. Original name: " . $image->getClientOriginalName() . ", Size: " . $image->getSize());
-                        try {
-                            // Store in 'cars/{car_id}/images' for better organization if desired, or 'Car' as before.
-                            // Using 'Car' subdirectory as per original logic.
-                            $path = $image->store('Car', 'public');
-                            Log::info("Image [{$index}] stored. Path: {$path}");
+                $firstUploadedImageId = null;
+                foreach ($validated['images'] as $index => $imageFile) {
+                    if ($imageFile->isValid()) {
+                        $originalName = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                        $sanitizedName = Str::slug($originalName);
+                        $extension = $imageFile->getClientOriginalExtension();
+                        $fileName = 'car_' . $car->id . '_' . $sanitizedName . '_' . time() . '_' . Str::random(3) . '.' . $extension;
+                        $path = $imageFile->storeAs('cars/' . $car->id, $fileName, 'public');
+                        Log::info("Image [{$index}] stored. Path: {$path}");
 
-                            if (Storage::disk('public')->exists($path)) {
-                                Log::info("Verified: File [{$path}] exists on public disk.");
-                            } else {
-                                Log::error("VERIFICATION FAILED: File [{$path}] DOES NOT exist on public disk after store command for Car ID: {$car->id}.");
-                                // Consider throwing an exception here to trigger transaction rollback if file storage is critical
-                                // throw new \Exception("Failed to verify storage of image: {$path}");
-                            }
-
-                            // Create CarImage record and associate with the car
-                            // The first image uploaded (index 0) is marked as featured for the image collection
-                            $carImage = $car->images()->create([
-                                'path' => $path,
-                                'is_featured' => $index === 0
-                            ]);
-                            Log::info("CarImage record created for Car ID: {$car->id}, Image Path: {$path}. DB Record:", $carImage->toArray());
-
-                        } catch (\Exception $e) {
-                            Log::error("Error storing/saving image [{$index}] for Car ID: {$car->id}: " . $e->getMessage(), ['exception' => $e]);
-                            // Re-throw to trigger transaction rollback
-                            throw $e;
+                        $carImage = $car->images()->create(['path' => $path]);
+                        Log::info("CarImage record created for Car ID: {$car->id}, Image Path: {$path}. DB Record:", $carImage->toArray());
+                        if ($index === 0) { // Track the first uploaded image
+                            $firstUploadedImageId = $carImage->id;
                         }
-                    } else {
-                        Log::error("Image [{$index}] for Car ID: {$car->id} is not valid. Error code: " . $image->getError() . " - " . $image->getErrorMessage());
-                        // Consider if an invalid file (post-validation, which is rare) should halt the process
-                        // throw new \Exception("An uploaded image was found to be invalid post-validation: " . $image->getClientOriginalName());
                     }
+                }
+                // Set the first uploaded image as featured
+                if ($firstUploadedImageId) {
+                    $car->update(['featured_image_id' => $firstUploadedImageId]);
+                    Log::info("Set featured image for Car ID: {$car->id} to Image ID: {$firstUploadedImageId}");
                 }
                 Log::info("Finished image handling process for Car ID: {$car->id}.");
             } else {
                 Log::info("No valid images found in request to handle for Car ID: {$car->id}.");
             }
 
-            // If all operations were successful, commit the transaction
             DB::commit();
             Log::info("Transaction committed. Car ID: {$car->id} and associated data saved successfully.");
-
-            return redirect('/admin/cars')->with('success', 'Car created successfully!'); // Assuming /admin/cars is your index route
-
+            return redirect()->route('admin.cars.index')->with('success', 'Car created successfully!');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Validation exceptions are typically handled by Laravel automatically,
-            // but if caught here, rollback and re-throw or handle.
             DB::rollBack();
             Log::error('Validation failed during carStore: ' . $e->getMessage(), ['errors' => $e->errors()]);
-            throw $e; // Re-throw to let Laravel handle the redirect back with errors
+            throw $e;
         } catch (\Exception $e) {
-            // For any other exceptions, rollback the transaction
             DB::rollBack();
-            Log::error("Error during car creation or related operations (transaction rolled back): " . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString() // More detailed for debugging
-            ]);
+            Log::error("Error during car creation or related operations (transaction rolled back): " . $e->getMessage(), ['exception' => $e, 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->withInput()->with('error', 'Failed to create car. An unexpected error occurred. Please try again. Details: ' . $e->getMessage());
+        }
+    }
 
-            return redirect()->back()
-                             ->withInput() // Send back old input to repopulate the form
-                             ->with('error', 'Failed to create car. An unexpected error occurred. Please try again. Details: ' . $e->getMessage());
+    public function edit(Car $car)
+    {
+        $features = Feature::orderBy('name')->get();
+        $car->load('images', 'features');
+        return view('admin.cars.edit', compact('car', 'features'));
+    }
+
+    public function update(Request $request, Car $car)
+    {
+        Log::info("Update method initiated for Car ID: {$car->id}.");
+        Log::info('Incoming update request data (excluding files initially):', $request->except(['_token', '_method', 'images']));
+        Log::info('Request has "images" field for update (form input name check):', ['has_images_field' => $request->has('images')]);
+        Log::info('Request has uploaded files for "images" for update:', ['has_uploaded_files' => $request->hasFile('images')]);
+
+        $validatedData = $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'make' => ['required_without:custom_make', 'string', 'max:100'],
+            'custom_make' => ['nullable', 'required_if:make,other', 'string', 'max:100'],
+            'model' => ['required', 'string', 'max:100'],
+            'year' => ['required', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+            'color' => ['nullable', 'required_without:custom_color', 'string', 'max:50'],
+            'custom_color' => ['nullable', 'required_if:color,custom', 'string', 'max:50'],
+            'license_plate' => ['required', 'string', 'max:10', Rule::unique('cars')->ignore($car->id)],
+            'vin' => ['required', 'string', 'alpha_num', 'size:17', Rule::unique('cars')->ignore($car->id)],
+            'transmission' => ['required', Rule::in(['manual', 'automatic'])],
+            'fuel_type' => ['required', Rule::in(['petrol', 'diesel', 'hybrid', 'electric'])],
+            'seats' => ['required', 'string', 'max:5'],
+            'doors' => ['required', 'integer', 'min:2', 'max:5'],
+            'mileage' => ['required', 'integer', 'min:0'],
+            'price_per_day' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', Rule::in(['available', 'rented', 'maintenance', 'out_of_service'])],
+            'is_featured' => ['nullable', 'boolean'], // Car level featured flag
+            'description' => ['nullable', 'string', 'max:5000'],
+            'features' => ['nullable', 'array'],
+            'features.*' => ['exists:features,id'],
+            'images' => ['nullable', 'array'], // Validate the array itself
+             // Max 5 *new* images can be uploaded, this rule applies to the 'images' array items
+            'images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'delete_images' => ['nullable', 'array'],
+            'delete_images.*' => ['integer', 'exists:car_images,id'],
+            'make_featured_image_id' => ['nullable', 'integer', 'exists:car_images,id'], // If using this for explicit featured set
+        ]);
+        Log::info('Validation passed for update. Validated data:', $validatedData);
+
+        DB::beginTransaction();
+        try {
+            // --- START: Handle "Set Featured Image" from a specific button click ---
+            // This gives priority to an explicit "Set Featured" action
+            if ($request->has('make_featured_image_id')) {
+                $imageIdToMakeFeatured = $request->input('make_featured_image_id');
+                // Ensure the image belongs to this car
+                $imageToFeature = CarImage::where('id', $imageIdToMakeFeatured)->where('car_id', $car->id)->first();
+                if ($imageToFeature) {
+                    $car->update(['featured_image_id' => $imageToFeature->id]);
+                    Log::info("Explicitly set featured image for Car ID: {$car->id} to Image ID: {$imageToFeature->id}");
+                } else {
+                    Log::warning("Attempted to set non-existent or mismatched image ID {$imageIdToMakeFeatured} as featured for Car ID: {$car->id}.");
+                }
+            }
+            // --- END: Handle "Set Featured Image" ---
+
+
+            $carData = $validatedData;
+            $carData['make'] = ($validatedData['make'] ?? $car->make) === 'other' ? ($validatedData['custom_make'] ?? $car->make) : ($validatedData['make'] ?? $car->make);
+            $carData['color'] = ($validatedData['color'] ?? $car->color) === 'custom' ? ($validatedData['custom_color'] ?? $car->color) : ($validatedData['color'] ?? $car->color);
+            unset($carData['custom_make'], $carData['custom_color']);
+
+            $carData['seats'] = ($validatedData['seats'] ?? $car->seats) === '9+' ? 9 : (int)($validatedData['seats'] ?? $car->seats);
+            $carData['doors'] = (int)($validatedData['doors'] ?? $car->doors);
+
+            $carData['is_featured'] = $request->boolean('is_featured'); // Car level featured
+
+            Log::info('Prepared car data for update:', $carData);
+            $car->update($carData);
+            Log::info("Car basic info updated for Car ID: {$car->id}.");
+
+            if ($request->has('features')) {
+                $car->features()->sync($validatedData['features']);
+                Log::info("Synced features for Car ID: {$car->id}.");
+            } else {
+                $car->features()->detach();
+                Log::info("Detached all features for Car ID: {$car->id} as none were provided.");
+            }
+
+            if ($request->has('delete_images')) {
+                Log::info("Processing images to delete for Car ID: {$car->id}.", ['images_to_delete' => $validatedData['delete_images']]);
+                foreach ($validatedData['delete_images'] as $imageIdToDelete) {
+                    $image = CarImage::find($imageIdToDelete);
+                    if ($image && $image->car_id === $car->id) {
+                        Storage::disk('public')->delete($image->path);
+                        $image->delete();
+                        Log::info("Deleted image ID: {$imageIdToDelete}, Path: {$image->path} for Car ID: {$car->id}.");
+                        if ($car->featured_image_id === (int)$imageIdToDelete) { // Cast to int for safety
+                            $car->update(['featured_image_id' => null]);
+                            Log::info("Unset featured image ID for Car ID: {$car->id} because it was deleted.");
+                        }
+                    }
+                }
+            }
+            $car->refresh(); // Refresh to get updated count after deletes
+
+            // Handle new image uploads
+            $newlyUploadedImageId = null;
+            if ($request->hasFile('images') && !empty($validatedData['images'])) {
+                $currentImageCount = $car->images()->count();
+                $canUploadCount = 5 - $currentImageCount; // Max 5 total images
+
+                Log::info("Processing new image uploads for Car ID: {$car->id}. Current images: {$currentImageCount}, Can upload: {$canUploadCount}");
+
+                if ($canUploadCount > 0) {
+                    $uploadedImageFiles = $validatedData['images']; // These are the validated UploadedFile objects
+                    foreach ($uploadedImageFiles as $index => $file) {
+                        if ($index >= $canUploadCount) {
+                            Log::info("Reached max image upload limit for Car ID: {$car->id}. Skipping remaining new images.");
+                            break;
+                        }
+                        if ($file->isValid()) {
+                            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                            $sanitizedName = Str::slug($originalName);
+                            $extension = $file->getClientOriginalExtension();
+                            $fileName = 'car_' . $car->id . '_' . $sanitizedName . '_' . time() . '_' . Str::random(3) . '.' . $extension;
+                            $path = $file->storeAs('cars/' . $car->id, $fileName, 'public');
+                            Log::info("Stored new image [{$index}] for Car ID: {$car->id}. Path: {$path}");
+
+                            $newImage = $car->images()->create(['path' => $path]);
+                            Log::info("Created CarImage record for new image. ID: {$newImage->id}");
+                            if ($index === 0 && empty($car->featured_image_id) && !$request->has('make_featured_image_id')) {
+                                // Only set as featured if no explicit featured image was set by button
+                                // and no featured image exists yet.
+                                $newlyUploadedImageId = $newImage->id;
+                            }
+                        } else {
+                             Log::error("A new image file was invalid post-validation. Original name: {$file->getClientOriginalName()}");
+                        }
+                    }
+                } else {
+                    Log::info("No slots available to upload new images for Car ID: {$car->id}. Max limit reached.");
+                }
+            }
+
+            $car->refresh(); // Refresh again after new uploads
+
+            // Smartly set featured image
+            // 1. If a "Set Featured" button was clicked, it's already handled and $car->featured_image_id is set.
+            // 2. If not, and a new image was uploaded and no featured image was set, use the first new one.
+            if (!$request->has('make_featured_image_id') && empty($car->featured_image_id) && $newlyUploadedImageId) {
+                $car->update(['featured_image_id' => $newlyUploadedImageId]);
+                Log::info("Set first newly uploaded image (ID: {$newlyUploadedImageId}) as featured for Car ID: {$car->id}.");
+            }
+            // 3. If still no featured image after all operations (e.g., old one deleted, no new ones, no explicit set)
+            //    and the car *still has images*, pick the first available one.
+            else if (empty($car->featured_image_id) && $car->images()->exists()) {
+                $firstExistingImage = $car->images()->orderBy('id')->first();
+                if ($firstExistingImage) {
+                    $car->update(['featured_image_id' => $firstExistingImage->id]);
+                    Log::info("Set first existing image (ID: {$firstExistingImage->id}) as featured for Car ID: {$car->id} as a fallback.");
+                }
+            }
+
+            DB::commit();
+            Log::info("Transaction committed for update. Car ID: {$car->id} updated successfully.");
+
+            // If "Set Featured" button was clicked, and it was the *only* action desired,
+            // redirect back to edit page. Otherwise, redirect to show page.
+            if ($request->has('make_featured_image_id') && count($request->all()) <= 4) { // _token, _method, _previous, make_featured_image_id
+                return redirect()->route('admin.cars.edit', $car->id)->with('success', 'Featured image updated successfully!');
+            }
+
+            return redirect()->route('admin.cars.show', $car->id)->with('success', 'Car details updated successfully!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            Log::error('Validation failed during car update for Car ID: {$car->id}: ' . $e->getMessage(), ['errors' => $e->errors()]);
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error during car update or related operations for Car ID: {$car->id} (transaction rolled back): " . $e->getMessage(), ['exception' => $e, 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->withInput()->with('error', 'Failed to update car. An unexpected error occurred. Please try again. Details: ' . $e->getMessage());
+        }
+    }
+
+    public function setFeaturedImage(Request $request, Car $car, CarImage $image)
+    {
+        if ($image->car_id !== $car->id) {
+            return back()->with('error', 'Invalid image selection. The image does not belong to this car.');
+        }
+        $car->update(['featured_image_id' => $image->id]);
+        return back()->with('success', 'Featured image updated successfully.');
+    }
+
+    // You'll also need a destroy method if you have delete buttons
+     public function destroy(Car $car)
+     {
+        DB::beginTransaction();
+         try {
+           
+            foreach ($car->images as $image) {
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+            // Detach features
+            $car->features()->detach();
+            // Delete the car
+            $car->delete();
+            DB::commit();
+            return redirect()->route('admin.cars.index')->with('success', 'Car deleted successfully.');
+         } catch (\Exception $e) {
+            DB::rollBack();
+       Log::error("Error deleting car ID: {$car->id} - " . $e->getMessage());
+             return redirect()->route('admin.cars.index')->with('error', 'Failed to delete car.');
         }
     }
 }

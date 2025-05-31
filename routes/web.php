@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CarController; // Corrected casing: Carcontroller -> CarController
+use App\Http\Controllers\CarController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\RegisterUserController;
 use App\Http\Controllers\SessionController;
@@ -25,16 +25,20 @@ Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
 
 
 // Admin Routes: Accessible only to authenticated users with the 'admin' role
-// Assumes you have a role named 'admin' created via Spatie
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-  Route::get('/', [AdminController::class, 'adminHome'])->name('dashboard');
+    Route::get('/', [AdminController::class, 'adminHome'])->name('dashboard');
 
     // Admin Car Management
     Route::get('/cars', [AdminController::class, 'index'])->name('cars.index');
     Route::get('/cars/create', [AdminController::class, 'carCreate'])->name('cars.create');
-    Route::post('/cars', [AdminController::class, 'carStore'])->name('cars.store');
-    Route::get('/cars/{id}', [AdminController::class, 'carShow'])->name('cars.show');
-  
+    Route::post('/cars', [AdminController::class, 'carStore'])->name('cars.store'); // For creating new cars
+    Route::get('/cars/{car}', [AdminController::class, 'carShow'])->name('cars.show'); // Route model binding for show
+    Route::get('/cars/{car}/edit', [AdminController::class, 'edit'])->name('cars.edit'); // Route model binding for edit
+    Route::put('/cars/{car}', [AdminController::class, 'update'])->name('cars.update'); // For updating existing cars (uses PUT)
+    Route::delete('/cars/{car}', [AdminController::class, 'destroy'])->name('cars.destroy'); // For deleting cars (add this if you have a destroy method)
+
+    
+     Route::post('/cars/{car}/set-featured-image/{image}', [AdminController::class, 'setFeaturedImage'])->name('cars.setFeaturedImage');
 });
 
 // Example of a route for authenticated users (non-admin specific, if needed)
