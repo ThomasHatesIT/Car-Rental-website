@@ -20,6 +20,7 @@ class AdminController extends Controller
         $this->middleware('permission:view cars')->only(['index', 'carShow']);
         $this->middleware('permission:create cars')->only(['carCreate', 'carStore']);
         $this->middleware('permission:edit cars')->only(['edit', 'update', 'setFeaturedImage']);
+        $this->middleware('permission:delete cars')->only(['destroy']);
         // Add $this->middleware('permission:delete cars')->only(['destroy']); when you implement it
     }
 

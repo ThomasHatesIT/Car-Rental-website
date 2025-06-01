@@ -28,7 +28,7 @@ class Car extends Model
     {
         return [
             'price_per_day' => 'decimal:2',
-            // 'images' => 'array', // This is for a JSON column, not your HasMany relationship
+          
             'is_featured' => 'boolean', // This is for the 'is_featured' column on the 'cars' table itself
         ];
     }

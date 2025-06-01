@@ -5,6 +5,7 @@ use App\Http\Controllers\CarController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\RegisterUserController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\BookingController;
 
 // Guest Routes: Accessible only to unauthenticated users
 Route::middleware('guest')->group(function () {
@@ -22,6 +23,17 @@ Route::post('/logout', [SessionController::class, 'destroy'])->name('logout')->m
 // Public/User Facing Car Routes (accessible to everyone)
 Route::get('/', [CarController::class, 'home'])->name('home');
 Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
+Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
+
+Route::get('/cars/{car}/edit', [AdminController::class, 'edit'])->name('cars.edit'); // Route model binding for edit
+
+
+Route::middleware('auth')->group(function () {
+    Route::get('/bookings/create/{id}', [BookingController::class, 'create'])->name('bookings.create');
+    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index'); // View user's bookings
+});
+
 
 
 // Admin Routes: Accessible only to authenticated users with the 'admin' role

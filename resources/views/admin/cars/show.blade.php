@@ -174,7 +174,7 @@
                                   @can('edit cars')
                                         <div class="flex flex-col sm:flex-row sm:items-center gap-3 mt-4 sm:mt-0">
                                             {{-- Edit Button - Authorization and proper route to be added later --}}
-                                            <a href="#" {{-- Placeholder link - Replace with your actual edit route later --}}
+                                            <a href="{{route('admin.cars.edit', $car)}}" {{-- Placeholder link - Replace with your actual edit route later --}}
                                             class="inline-flex items-center justify-center px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 order-last sm:order-first sm:mr-3 w-full sm:w-auto">
                                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -184,23 +184,7 @@
                                     @endcan
                                             {{-- End Edit Button --}}
 
-                                            @if($car->status === 'available')
-                                                <a href="#" {{-- Placeholder link - Add your booking route here --}}
-                                                class="inline-flex items-center justify-center px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto">
-                                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                    </svg>
-                                                    Book Now
-                                                </a>
-                                            @else
-                                                <button disabled
-                                                        class="inline-flex items-center justify-center px-8 py-3 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed w-full sm:w-auto">
-                                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0h-2m9-5a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                    </svg>
-                                                    Not Available
-                                                </button>
-                                            @endif
+                                        
                                         </div>
                                     </div>
                                 </div>

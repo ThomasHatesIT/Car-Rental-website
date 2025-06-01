@@ -14,21 +14,9 @@ class DatabaseSeeder extends Seeder
 
 public function run()
 {
-    // Seed features first
-    Feature::insert([
-        ['name' => 'GPS'],
-        ['name' => 'Bluetooth'],
-        ['name' => 'Air Conditioning'],
-        ['name' => 'Heated Seats'],
-        ['name' => 'Backup Camera'],
-    ]);
-
-    // Create 10 cars
-    Car::factory(10)->create()->each(function ($car) {
-        // Attach 2 to 4 random features to each car
-        $featureIds = Feature::inRandomOrder()->take(rand(2, 4))->pluck('id');
-        $car->features()->attach($featureIds);
-    });
+    $this->call([
+          
+            BookingSeeder::class,    // Add your new seeder here
+        ]);
 }
-
 }
