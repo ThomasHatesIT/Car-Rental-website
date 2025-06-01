@@ -110,11 +110,21 @@ class Booking extends Model
         return $this->status === 'cancelled';
     }
 
-    public function canBeCancelled(): bool
-    {
-        return in_array($this->status, ['pending', 'confirmed']) && 
-               $this->start_date->isFuture();
+   public function canBeCancelledByUser(): bool
+{
+    if (!in_array($this->status, [BookingStatus::PENDING, BookingStatus::CONFIRMED])) {
+        return false;
     }
+    if ($this->cancelled_at) { // Already cancelled
+        return false;
+    }
+    // Optional: Time-based restriction (e.g., not within 24 hours of start_date)
+    // $cancellationCutoffHours = 24;
+    // if (Carbon::now()->addHours($cancellationCutoffHours)->gt($this->start_date)) {
+    //     return false;
+    // }
+    return true;
+}
 
     public function getDurationAttribute(): string
     {

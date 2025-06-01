@@ -2,10 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarController;
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminController; // This is likely your main Admin dashboard controller
 use App\Http\Controllers\RegisterUserController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\Admin\AdminBookingController;
 
 // Guest Routes: Accessible only to unauthenticated users
 Route::middleware('guest')->group(function () {
@@ -29,9 +30,12 @@ Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
 
 
 Route::middleware('auth')->group(function () {
-    Route::get('/bookings/create/{id}', [BookingController::class, 'create'])->name('bookings.create');
+    Route::get('/bookings/create/{car}', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index'); // View user's bookings
+ Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+
+    
 });
 
 
@@ -51,6 +55,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     
      Route::post('/cars/{car}/set-featured-image/{image}', [AdminController::class, 'setFeaturedImage'])->name('cars.setFeaturedImage');
+
+
+       Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
+    Route::patch('/bookings/{booking}/update-status', [AdminBookingController::class, 'updateStatus'])->name('bookings.updateStatus');
+    Route::patch('/bookings/{booking}/cancel', [AdminBookingController::class, 'cancelBooking'])->name('bookings.cancel');
 });
 
 // Example of a route for authenticated users (non-admin specific, if needed)

@@ -46,6 +46,34 @@
     <!-- Navigation -->
     @include('components.navbar')
 
+      <div class="container mx-auto px-4 py-2"> {{-- Adjust container/padding as needed --}}
+        @if (session('success'))
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                <p class="font-bold">Success</p>
+                <p>{{ session('success') }}</p>
+            </div>
+        @endif
+
+        @if (session('error')) {{-- For general errors flashed from controller --}}
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                <p class="font-bold">Error</p>
+                <p>{{ session('error') }}</p>
+            </div>
+        @endif
+
+        {{-- THIS IS THE CRUCIAL PART FOR VALIDATION ERRORS --}}
+        @if ($errors->any())
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                <p class="font-bold">Please correct the following errors:</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+    </div>
+
     <!-- Page Content -->
     <main>
         @yield('content')

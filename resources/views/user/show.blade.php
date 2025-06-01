@@ -185,7 +185,7 @@
                                             {{-- End Edit Button --}}
 
                                             @if($car->status === 'available')
-                                                <a href="{{route('bookings.create', $car->id)}}" {{-- Placeholder link - Add your booking route here --}}
+                                                <a href="{{route('bookings.create', $car)}}" {{-- Placeholder link - Add your booking route here --}}
                                                 class="inline-flex items-center justify-center px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto">
                                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>

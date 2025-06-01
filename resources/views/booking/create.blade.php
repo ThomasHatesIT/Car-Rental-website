@@ -54,7 +54,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Booking Details</h2>
             
-            <form action="" method="POST">
+            <form action="{{ route('bookings.store') }}" method="POST" id="bookingForm">
                 @csrf
                 <input type="hidden" name="car_id" value="{{ $car->id }}">
                 
@@ -222,43 +222,141 @@
     </div>
 </div>
 
+
+
+
+
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const startDateInput = document.getElementById('start_date');
     const endDateInput = document.getElementById('end_date');
-    const dailyRate = {{ $car->price_per_day }};
+    const dailyRateInput = {{ $car->price_per_day }}; // Direct number
+    const dailyRate = parseFloat(dailyRateInput);
+    const taxRate = 0.10; // 10%
 
-    function calculateBooking() {
-        const startDate = new Date(startDateInput.value);
-        const endDate = new Date(endDateInput.value);
-        
-        if (startDate && endDate && endDate > startDate) {
-            const timeDiff = endDate.getTime() - startDate.getTime();
-            const totalDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-            const subtotal = totalDays * dailyRate;
-            const taxAmount = subtotal * 0.10;
-            const totalAmount = subtotal + taxAmount;
+    const totalDaysEl = document.getElementById('total-days');
+    const subtotalEl = document.getElementById('subtotal');
+    const taxAmountEl = document.getElementById('tax-amount');
+    const totalAmountEl = document.getElementById('total-amount');
+
+    function calculateSummary() {
+        const startDateVal = startDateInput.value;
+        const endDateVal = endDateInput.value;
+
+        if (startDateVal && endDateVal && dailyRate) {
+            // Create Date objects at UTC midnight to avoid timezone issues for simple day diff
+            const start = new Date(startDateVal + 'T00:00:00Z');
+            const end = new Date(endDateVal + 'T00:00:00Z');
+
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) { // Check for invalid dates
+                clearSummary();
+                return;
+            }
             
-            document.getElementById('total-days').textContent = totalDays;
-            document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
-            document.getElementById('tax-amount').textContent = '$' + taxAmount.toFixed(2);
-            document.getElementById('total-amount').textContent = '$' + totalAmount.toFixed(2);
+            if (end < start) {
+                clearSummary(); // Or show an error message like "Return date cannot be before pickup date"
+                // Optionally disable submit button
+                return;
+            }
+
+            // Calculate difference in days. Add 1 because rental for same day is 1 day.
+            const diffTime = end.getTime() - start.getTime(); // Difference in milliseconds
+            let calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Ensure days are at least 1 if dates are valid and end >= start
+            // If start and end are the same, diffTime is 0, calculatedDays is 1. Correct.
+            // If end is next day, diffTime is 1 day in ms, calculatedDays is 2. This is where it differs from backend.
+            // Let's adjust to match backend logic: diffInDays + 1
+            // For JS, if start=26th, end=26th -> 0 days diff + 1 = 1 day
+            // If start=26th, end=27th -> 1 day diff + 1 = 2 days
+            // This matches the Carbon diffInDays($start)->addDay() or diffInDays($start)+1 logic
+
+            // A more direct day difference logic:
+            // Number of days = (endDate - startDate) / millisecondsInDay.
+            // For inclusive count: floor((endDate - startDate) / msPerDay) + 1
+            // For Carbon's diffInDays behavior, it's the number of full 24-hour periods.
+            // Let's stick to the time difference and add 1 for inclusive display.
+            // This is how many calendar days are spanned.
+
+            // Re-evaluating the day calculation for client-side to match PHP:
+            // Carbon's $endDate->diffInDays($startDate) counts full 24-hour periods.
+            // So, 2023-10-26 to 2023-10-26 is 0 days. +1 = 1 day.
+            // 2023-10-26 to 2023-10-27 is 1 day. +1 = 2 days.
+
+            // JS equivalent:
+            // Treat dates as just dates, ignore time for day counting.
+            const sDate = new Date(startDateVal); // Local timezone, but just for day part
+            const eDate = new Date(endDateVal);
+            
+            // Reset time to midnight for consistent day difference calculation
+            sDate.setHours(0,0,0,0);
+            eDate.setHours(0,0,0,0);
+
+            if (eDate < sDate) { // Double check after parsing
+                 clearSummary();
+                 return;
+            }
+
+            const daysDiff = Math.round((eDate - sDate) / (1000 * 60 * 60 * 24));
+            calculatedDays = daysDiff + 1;
+
+
+            if (calculatedDays > 0) {
+                const subtotal = dailyRate * calculatedDays;
+                const tax = subtotal * taxRate;
+                const total = subtotal + tax;
+
+                totalDaysEl.textContent = calculatedDays;
+                subtotalEl.textContent = '$' + subtotal.toFixed(2);
+                taxAmountEl.textContent = '$' + tax.toFixed(2);
+                totalAmountEl.textContent = '$' + total.toFixed(2);
+            } else {
+                clearSummary();
+            }
         } else {
-            document.getElementById('total-days').textContent = '-';
-            document.getElementById('subtotal').textContent = '$0.00';
-            document.getElementById('tax-amount').textContent = '$0.00';
-            document.getElementById('total-amount').textContent = '$0.00';
+            clearSummary();
         }
     }
 
-    startDateInput.addEventListener('change', calculateBooking);
-    endDateInput.addEventListener('change', function() {
-        this.min = startDateInput.value;
-        calculateBooking();
+    function clearSummary() {
+        totalDaysEl.textContent = '-';
+        subtotalEl.textContent = '$0.00';
+        taxAmountEl.textContent = '$0.00';
+        totalAmountEl.textContent = '$0.00';
+    }
+
+    startDateInput.addEventListener('change', function() {
+        if (this.value) {
+            endDateInput.min = this.value;
+            // If end_date was before new start_date, clear or adjust end_date
+            if (endDateInput.value && endDateInput.value < this.value) {
+                endDateInput.value = this.value; // Set end_date to be same as start_date
+            }
+        } else {
+            // Reset to today if start_date is cleared, also clear end_date's value
+            endDateInput.min = "{{ date('Y-m-d') }}";
+            // endDateInput.value = ""; // Optionally clear end_date if start_date is cleared
+        }
+        calculateSummary();
     });
-    
-    // Initial calculation if dates are pre-filled
-    calculateBooking();
+
+    endDateInput.addEventListener('change', function() {
+        // Ensure min is still respected if start_date wasn't changed but end_date is manually typed
+        if (startDateInput.value && this.value < startDateInput.value) {
+            this.value = startDateInput.value; // Correct it
+        }
+        calculateSummary();
+    });
+
+    // Initial calculation on page load if dates are pre-filled (e.g., by old() helper)
+    // And ensure end_date.min is set correctly if old('start_date') is present
+    if (startDateInput.value) {
+        endDateInput.min = startDateInput.value;
+    }
+    calculateSummary();
+
 });
 </script>
+
 @endsection
