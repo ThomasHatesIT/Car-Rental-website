@@ -56,6 +56,8 @@ class Booking extends Model
         ];
     }
 
+
+    
     // Relationships
     public function user(): BelongsTo
     {

@@ -25,7 +25,7 @@ Route::get('/', [CarController::class, 'home'])->name('home');
 Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
 Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
 
-Route::get('/cars/{car}/edit', [AdminController::class, 'edit'])->name('cars.edit'); // Route model binding for edit
+
 
 
 Route::middleware('auth')->group(function () {

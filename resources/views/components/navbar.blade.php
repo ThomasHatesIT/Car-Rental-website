@@ -19,7 +19,7 @@
                 </a>
                 
                 @auth {{-- Show My Bookings and Account only if logged in --}}
-                <a href="/my-bookings" class="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200">
+                <a href="{{route('bookings.index')}}" class="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a2 2 0 012 2v1a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2h4z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
