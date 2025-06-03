@@ -40,7 +40,7 @@ Route::middleware('auth')->group(function () {
 
 
 
-// Admin Routes: Accessible only to authenticated users with the 'admin' role
+// Admin Routes: Accessible only to authenticated users with the 'admin' role   
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'adminHome'])->name('dashboard');
 

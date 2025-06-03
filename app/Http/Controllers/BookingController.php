@@ -9,9 +9,11 @@ use App\Models\Booking;
 use Illuminate\Http\Request; // Keep for other methods if needed, though store uses FormRequest
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log; // Ensure Log facade is imported
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BookingMail;
 
 class BookingController extends Controller
 {
@@ -22,15 +24,12 @@ class BookingController extends Controller
      */
     public function create(Car $car) // Use Route Model Binding for $car
     {
-        // Eager load relationships if not already loaded by default or if specifically needed here
-        // $car->loadMissing(['featuredImage', 'images']); // This is good practice
-
         if ($car->status !== 'available') {
-            return redirect()->route('home') // Or wherever you list cars
+            return redirect()->route('home')
                 ->with('error', 'This car is currently not available for booking.');
         }
 
-        return view('booking.create', [ // Assuming your view is in 'booking/create.blade.php'
+        return view('booking.create', [
             'car' => $car
         ]);
     }
@@ -41,31 +40,21 @@ class BookingController extends Controller
     public function store(StoreBookingRequest $request)
     {
         $validatedData = $request->validated();
-
         $car = Car::findOrFail($validatedData['car_id']);
 
-        // Double check availability - validation request should handle this, but good for defense
-        // The StoreBookingRequest already performs this check, including isAvailableForDates
-        // if ($car->status !== 'available' || !$car->isAvailableForDates(Carbon::parse($validatedData['start_date']), Carbon::parse($validatedData['end_date']))) {
-        //      return back()->withInput()->with('error', 'Sorry, this car is no longer available for the selected dates. Please try different dates or another car.');
-        // }
-
-        // Calculate total days
         $startDate = Carbon::parse($validatedData['start_date']);
         $endDate = Carbon::parse($validatedData['end_date']);
-     $totalDays = $endDate->diffInDays($startDate, true) + 1; // Explicitly use absolute: true
-     
+        $totalDays = $endDate->diffInDays($startDate, true) + 1;
+
         if ($totalDays <= 0) {
              return back()->withInput()->with('error', 'Booking duration must be at least 1 day.');
         }
 
-        // Calculate amounts
         $dailyRate = $car->price_per_day;
         $subtotal = $dailyRate * $totalDays;
-        $taxRate = 0.10; // 10% tax - consider making this a config value (e.g., config('app.tax_rate'))
+        $taxRate = 0.10;
         $taxAmount = $subtotal * $taxRate;
         $totalAmount = $subtotal + $taxAmount;
-        // discount_amount is 0 by default as per schema for now
 
         DB::beginTransaction();
         try {
@@ -83,27 +72,43 @@ class BookingController extends Controller
                 'daily_rate' => $dailyRate,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
-                'discount_amount' => 0, // Explicitly set, though default is 0
+                'discount_amount' => 0,
                 'total_amount' => $totalAmount,
-                'status' => 'pending', // Initial status
-                'payment_status' => 'pending', // Initial payment status
+                'status' => 'pending',
+                'payment_status' => 'pending',
                 'notes' => $validatedData['notes'] ?? null,
             ]);
 
-            DB::commit();
+         // In App\Http\Controllers\BookingController.php, inside store() method
 
-            // TODO: Send notification to user and admin (future step)
+// ... after $booking = Booking::create([...]);
+$booking->load(['user', 'car']); // Eager load the user and car relationships
+DB::commit();
 
-            // Redirect to a booking success/pending page or "My Bookings"
-            // For now, let's redirect to home with a success message.
-            // We'll create a 'my-bookings' page (bookings.index) soon.
-            return redirect()->route('home') // Change to 'bookings.index' for "My Bookings" later
+if ($booking->user) {
+    Log::info('Attempting to send booking confirmation email for booking ID: ' . $booking->id . ' to ' . $booking->user->email);
+    // Note: You currently have the recipient hardcoded.
+    // If you want it to go to the booking user, use: Mail::to($booking->user->email)->send(new BookingMail($booking));
+    Mail::to('thomasbernardo910@gmail.com')->send(new BookingMail($booking));
+    Log::info('Mail::send command executed for booking ID: ' . $booking->id);
+} else {
+    Log::warning('Booking user not found for booking ID: ' . $booking->id . '. Email not sent.');
+}
+// ...
+            // --- END ADDED LOGGING ---
+
+            return redirect()->route('home')
                 ->with('success', 'Booking request submitted successfully! Your booking is pending approval.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // It's good practice to log the actual error for debugging
-            \Illuminate\Support\Facades\Log::error('Booking creation failed: ' . $e->getMessage(), ['request_data' => $request->all()]);
+            // --- MODIFIED LOGGING FOR EXCEPTION ---
+            Log::error('Booking creation or mail sending failed: ' . $e->getMessage() . ' Stack trace: ' . $e->getTraceAsString(), [
+                'request_data' => $request->all(),
+                'exception_file' => $e->getFile(),
+                'exception_line' => $e->getLine()
+            ]);
+            // --- END MODIFIED LOGGING ---
             return back()->withInput()->with('error', 'There was an issue submitting your booking. Please try again.');
         }
     }
@@ -111,15 +116,14 @@ class BookingController extends Controller
     /**
      * Display a listing of the user's bookings (My Bookings).
      */
-    public function index() // This will be for "My Bookings"
+    public function index()
     {
-        // Fetch bookings for the authenticated user, ordered by creation date or start date
         $bookings = Booking::where('user_id', Auth::id())
-                            ->with('car') // Eager load car details
+                            ->with('car')
                             ->orderBy('created_at', 'desc')
-                            ->paginate(10); // Paginate for better performance
+                            ->paginate(10);
 
-        return view('booking.index', [ // Assuming your view is 'booking/index.blade.php'
+        return view('booking.index', [
             'bookings' => $bookings
         ]);
     }
@@ -128,94 +132,81 @@ class BookingController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Booking $booking) // Use Route Model Binding for $booking
+    public function show(Booking $booking)
     {
-        // Authorization: Ensure the user owns this booking or is an admin
-        // $this->authorize('view', $booking); // Example if you have a BookingPolicy
-
+        // $this->authorize('view', $booking);
         // if (Auth::id() !== $booking->user_id && !Auth::user()->hasRole('admin')) {
         //     abort(403, 'Unauthorized action.');
         // }
-        
-        // $booking->load('car', 'user'); // Eager load relationships
+        // $booking->load('car', 'user');
         // return view('booking.show', compact('booking'));
-
-        // For now, placeholder:
         return "Show booking: " . $booking->booking_number;
     }
 
     /**
      * Show the form for editing the specified resource.
-     * (Likely not for users, maybe for admins to modify details before confirmation)
      */
-    public function edit(Booking $booking) // Use Route Model Binding for $booking
+    public function edit(Booking $booking)
     {
-        // Authorization
         // $this->authorize('update', $booking);
         // return view('booking.edit', compact('booking'));
-
-        // For now, placeholder:
         return "Edit booking: " . $booking->booking_number;
     }
 
     /**
      * Update the specified resource in storage.
-     * (Likely for admins to confirm/cancel, or users to cancel)
      */
-    public function update(Request $request, Booking $booking) // Use Route Model Binding for $booking
+    public function update(Request $request, Booking $booking)
     {
-        // Authorization
         // $this->authorize('update', $booking);
-
-        // Validation logic for updates
-
         // Update logic
-
         // return redirect()->route('bookings.show', $booking)->with('success', 'Booking updated.');
-
-        // For now, placeholder:
         return "Update booking: " . $booking->booking_number;
     }
 
     /**
      * Remove the specified resource from storage.
-     * (More likely 'cancel' rather than hard delete for users)
      */
-    public function destroy(Booking $booking) 
+    public function destroy(Booking $booking)
     {
-       
-     $this->authorize('delete', $booking);
+        $this->authorize('delete', $booking);
 
-       
-        if ($booking->canBeCancelledByUser()) {
+        if ($booking->canBeCancelledByUser()) { // Assuming this method exists on your Booking model
             $booking->status = 'cancelled';
             $booking->cancelled_at = now();
-             // Add cancellation_reason if applicable
-             $booking->save();
-          return redirect()->route('bookings.index')->with('success', 'Booking cancelled.');
-     }
-
-      
-        return "Destroy/Cancel booking: " . $booking->booking_number;
+            $booking->save();
+            return redirect()->route('bookings.index')->with('success', 'Booking cancelled.');
+        }
+        // Fallback or error if can't be cancelled
+        return redirect()->route('bookings.index')->with('error', 'Booking could not be cancelled at this time.');
     }
 
 
    public function cancel(Booking $booking)
-{
-    $this->authorize('cancel', $booking);
+   {
+        $this->authorize('cancel', $booking); // Assuming you have a 'cancel' policy method
 
-    try {
-        $booking->status = 'cancelled';
-        $booking->cancelled_at = now();
-        $booking->cancellation_reason = 'Cancelled by user';
-        $booking->save();
+        try {
+            if ($booking->status !== 'pending' && $booking->status !== 'confirmed') { // Example condition
+                return redirect()->route('bookings.index')
+                    ->with('error', 'Booking #' . $booking->booking_number . ' cannot be cancelled in its current state.');
+            }
 
-        return redirect()->route('bookings.index')
-            ->with('success', 'Booking #' . $booking->booking_number . ' has been successfully cancelled.');
-    } catch (\Exception $e) {
-        Log::error('Booking cancellation failed: ' . $e->getMessage());
-        return redirect()->route('bookings.index')
-            ->with('error', 'There was an issue cancelling your booking.');
+            $booking->status = 'cancelled';
+            $booking->cancelled_at = now();
+            $booking->cancellation_reason = 'Cancelled by user'; // Or get reason from request
+            $booking->save();
+
+            // Optionally, send a cancellation confirmation email
+            // Mail::to($booking->user->email)->send(new BookingCancelledMail($booking));
+            // Log::info('Booking cancellation email sent for booking ID: ' . $booking->id);
+
+            return redirect()->route('bookings.index')
+                ->with('success', 'Booking #' . $booking->booking_number . ' has been successfully cancelled.');
+        } catch (\Exception $e) {
+            Log::error('Booking cancellation failed for booking ID ' . $booking->id . ': ' . $e->getMessage() . ' Stack Trace: ' . $e->getTraceAsString());
+            return redirect()->route('bookings.index')
+                ->with('error', 'There was an issue cancelling your booking. Please try again or contact support.');
+        }
     }
-}
-}
+}   
