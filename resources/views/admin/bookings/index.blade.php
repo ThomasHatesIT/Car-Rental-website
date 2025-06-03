@@ -1,5 +1,5 @@
 {{-- resources/views/admin/bookings/index.blade.php --}}
-@extends('layouts.admin') {{-- Ensure this layout exists and is correctly named --}}
+@extends('layouts.admin')
 
 @section('title', 'Manage Bookings')
 
@@ -7,7 +7,6 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Manage Bookings</h1>
-        {{-- Optional: Link to create a new booking if admin has this functionality --}}
         {{-- <a href="{{ route('admin.bookings.create') }}" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Create Booking</a> --}}
     </div>
 
@@ -42,9 +41,9 @@
                     <label for="status" class="block text-sm font-medium text-gray-700">Booking Status</label>
                     <select name="status" id="status" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         <option value="">All</option>
-                        @foreach($bookingStatuses as $status)
-                            <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
-                                {{ ucfirst($status) }}
+                        @foreach($bookingStatuses as $statusKey => $statusValue)
+                            <option value="{{ $statusKey }}" {{ request('status') == $statusKey ? 'selected' : '' }}>
+                                {{ $statusValue }}
                             </option>
                         @endforeach
                     </select>
@@ -53,9 +52,9 @@
                     <label for="payment_status" class="block text-sm font-medium text-gray-700">Payment Status</label>
                     <select name="payment_status" id="payment_status" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         <option value="">All</option>
-                         @foreach($paymentStatuses as $pStatus)
-                            <option value="{{ $pStatus }}" {{ request('payment_status') == $pStatus ? 'selected' : '' }}>
-                                {{ ucfirst($pStatus) }}
+                         @foreach($paymentStatuses as $pStatusKey => $pStatusValue)
+                            <option value="{{ $pStatusKey }}" {{ request('payment_status') == $pStatusKey ? 'selected' : '' }}>
+                                {{ $pStatusValue }}
                             </option>
                         @endforeach
                     </select>
@@ -65,7 +64,7 @@
                             class="flex-grow inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         Filter
                     </button>
-                     @if(request()->has('search_term') || request()->has('status') || request()->has('payment_status'))
+                     @if(request()->filled('search_term') || request()->filled('status') || request()->filled('payment_status'))
                         <a href="{{ route('admin.bookings.index') }}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                             Clear
                         </a>
@@ -95,11 +94,10 @@
                 @forelse($bookings as $index => $booking)
                     <tr>
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $bookings->firstItem() + $index }} {{-- Sequential number considering pagination --}}
+                            {{ $bookings->firstItem() + $index }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{-- Make Booking # clickable to a detail page (if you create one) --}}
-                            <a href="" class="text-indigo-600 hover:text-indigo-800 hover:underline" title="View Booking Details">
+                            <a href="{{ route('admin.bookings.show', $booking) }}" class="text-indigo-600 hover:text-indigo-800 hover:underline" title="View Booking Details">
                                 {{ $booking->booking_number }}
                             </a>
                         </td>
@@ -130,61 +128,39 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-semibold">${{ number_format($booking->total_amount, 2) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <form action="{{ route('admin.bookings.updateStatus', array_merge(['booking' => $booking->id], request()->query())) }}" method="POST" class="inline-flex items-center">
-                                @csrf
-                                @method('PATCH')
-                                <select name="status" class="text-sm p-1 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500
-                                    @if($booking->status == 'pending') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300
-                                    @elseif($booking->status == 'confirmed') bg-blue-100 text-blue-800 ring-1 ring-blue-300
-                                    @elseif($booking->status == 'active') bg-green-100 text-green-800 ring-1 ring-green-300
-                                    @elseif($booking->status == 'completed') bg-gray-200 text-gray-800 ring-1 ring-gray-400
-                                    @elseif($booking->status == 'cancelled') bg-red-100 text-red-800 ring-1 ring-red-300
-                                    @endif"
-                                    onchange="this.form.submit()"
-                                    @if($booking->status === 'completed' || $booking->status === 'cancelled') disabled @endif {{-- Disable if completed/cancelled --}}
-                                    >
-                                    @foreach($bookingStatuses as $status)
-                                        <option value="{{ $status }}" {{ $booking->status == $status ? 'selected' : '' }}>
-                                            {{ ucfirst($status) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <noscript><button type="submit" class="ml-1 text-xs p-1 bg-gray-200 rounded">Save</button></noscript>
-                            </form>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                @if($booking->status == 'pending') bg-yellow-100 text-yellow-800
+                                @elseif($booking->status == 'confirmed') bg-blue-100 text-blue-800
+                                @elseif($booking->status == 'active') bg-green-100 text-green-800
+                                @elseif($booking->status == 'completed') bg-gray-200 text-gray-800
+                                @elseif($booking->status == 'cancelled') bg-red-100 text-red-800
+                                @else bg-gray-100 text-gray-800
+                                @endif">
+                                {{ $bookingStatuses[$booking->status] ?? ucfirst($booking->status) }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                             <form action="{{ route('admin.bookings.updateStatus', array_merge(['booking' => $booking->id], request()->query())) }}" method="POST" class="inline-flex items-center">
-                                @csrf
-                                @method('PATCH')
-                                <select name="payment_status" class="text-sm p-1 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500
-                                    @if($booking->payment_status == 'pending') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300
-                                    @elseif($booking->payment_status == 'paid') bg-green-100 text-green-800 ring-1 ring-green-300
-                                    @elseif($booking->payment_status == 'failed') bg-red-100 text-red-800 ring-1 ring-red-300
-                                    @elseif($booking->payment_status == 'refunded') bg-purple-100 text-purple-800 ring-1 ring-purple-300
-                                    @endif"
-                                    onchange="this.form.submit()"
-                                     @if($booking->status === 'cancelled' || $booking->payment_status === 'refunded') disabled @endif {{-- Disable if booking cancelled or payment refunded --}}
-                                    >
-                                     @foreach($paymentStatuses as $pStatus)
-                                        <option value="{{ $pStatus }}" {{ $booking->payment_status == $pStatus ? 'selected' : '' }}>
-                                            {{ ucfirst($pStatus) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                 <noscript><button type="submit" class="ml-1 text-xs p-1 bg-gray-200 rounded">Save</button></noscript>
-                            </form>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                @if($booking->payment_status == 'pending') bg-yellow-100 text-yellow-800
+                                @elseif($booking->payment_status == 'paid') bg-green-100 text-green-800
+                                @elseif($booking->payment_status == 'failed') bg-red-100 text-red-800
+                                @elseif($booking->payment_status == 'refunded') bg-purple-100 text-purple-800
+                                @else bg-gray-100 text-gray-800
+                                @endif">
+                                {{ $paymentStatuses[$booking->payment_status] ?? ucfirst($booking->payment_status) }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {{-- View button already handled by clickable Booking # --}}
+                            <a href="{{ route('admin.bookings.show', $booking) }}" class="text-indigo-600 hover:text-indigo-800 mr-3" title="View Details">
+                                <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                Show
+                            </a>
                             @if($booking->status !== 'cancelled' && $booking->status !== 'completed')
                                 <button type="button" onclick="openCancelModal({{ $booking->id }}, '{{ $booking->booking_number }}')"
                                         class="text-red-600 hover:text-red-800" title="Cancel Booking">
+                                    <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     Cancel
                                 </button>
-                            @else
-                                <span class="text-gray-400 italic text-xs">
-                                    {{ ucfirst($booking->status) }}
-                                </span>
                             @endif
                         </td>
                     </tr>
@@ -201,21 +177,20 @@
 
     @if ($bookings->hasPages())
         <div class="mt-8">
-            {{ $bookings->links() }} {{-- Renders Tailwind pagination links by default in L9+ --}}
+            {{ $bookings->links() }}
         </div>
     @endif
 </div>
 
 <!-- Cancel Booking Modal (remains the same) -->
 <div id="cancelBookingModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    {{-- ... Modal content ... (no changes needed here from previous version) --}}
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">​</span>
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
             <form id="cancelBookingForm" method="POST"> {{-- Action will be set by JS --}}
                 @csrf
-                @method('PATCH')
+                @method('PATCH') {{-- Important: method override for cancel action --}}
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
                         <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -263,14 +238,18 @@
     const cancellationReasonTextarea = document.getElementById('cancellation_reason_admin');
 
     function openCancelModal(bookingId, bookingNumber) {
-        let actionUrl = "{{ url('admin/bookings') }}/" + bookingId + "/cancel";
+        // Ensure the base URL is correct for your admin routes
+        let actionUrl = `{{ url('admin/bookings') }}/${bookingId}/cancel`;
+
+        // Preserve query parameters (filters) when the form is submitted and redirects
         const currentQueryParams = window.location.search;
         if (currentQueryParams) {
+            // Check if actionUrl already has query params (it shouldn't from base)
             actionUrl += currentQueryParams;
         }
         cancelBookingForm.action = actionUrl;
         modalBookingNumberSpan.textContent = '#' + bookingNumber;
-        cancellationReasonTextarea.value = '';
+        cancellationReasonTextarea.value = ''; // Clear previous reason
         cancelBookingModal.classList.remove('hidden');
     }
 
@@ -278,6 +257,7 @@
         cancelBookingModal.classList.add('hidden');
     }
 
+    // Close modal on escape key
     document.addEventListener('keydown', function (event) {
         if (event.key === "Escape" && !cancelBookingModal.classList.contains('hidden')) {
             closeCancelModal();
