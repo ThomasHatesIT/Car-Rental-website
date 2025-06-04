@@ -35,7 +35,7 @@ class CarFactory extends Factory
             'description' => $this->faker->paragraph(),
 
             
-            'images' => json_encode(['images/img1.jpg']), // path relative to public folder
+       
 
             'status' => $this->faker->randomElement(['available', 'rented', 'maintenance', 'out_of_service']),
             'is_featured' => $this->faker->boolean(20),

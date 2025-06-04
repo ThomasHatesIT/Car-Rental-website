@@ -112,7 +112,7 @@ class Booking extends Model
 
    public function canBeCancelledByUser(): bool
 {
-    if (!in_array($this->status, [BookingStatus::PENDING, BookingStatus::CONFIRMED])) {
+      if (!in_array($this->status, ['pending', 'confirmed'])) {
         return false;
     }
     if ($this->cancelled_at) { // Already cancelled
