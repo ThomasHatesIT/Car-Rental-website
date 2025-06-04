@@ -68,7 +68,7 @@ class Carcontroller extends BaseController // <--- CHANGE 'Controller' to 'BaseC
     public function show(string $id)
     {
         $car = Car::with(['features', 'featuredImage', 'images'])->findOrFail($id);
-        return view('user.show', compact('car')); // Pass 'car' not an array with 'car' key
+        return view('user.cars.show', compact('car')); // Pass 'car' not an array with 'car' key
     }
 
     /**

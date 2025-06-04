@@ -1,12 +1,14 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', $car->make . ' ' . $car->model . ' - Car Details')
 
 @section('content')
-        <x-car-details-card
-        :car="$car"
-        backUrl="{{ url()->previous() ?? route('admin.cars.index') }}" {{-- Fallback to previous or a default --}}
-        backText="Go Back"
-    />
-    {{-- You could also use a simple URL: backUrl="/admin/cars" --}}
+    <x-car-details-card 
+        :car="$car" 
+        :backUrl="route('admin.cars.index')" 
+        backText="Go back" />
 @endsection
+
+@push('scripts')
+    {{-- The component already pushes its script. If you have other scripts: --}}
+@endpush

@@ -24,7 +24,7 @@ Route::post('/logout', [SessionController::class, 'destroy'])->name('logout')->m
 // Public/User Facing Car Routes (accessible to everyone)
 Route::get('/', [CarController::class, 'home'])->name('home');
 Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
-Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
+
 
 
 
@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/create/{car}', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index'); // View user's bookings
+     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
  Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 
     

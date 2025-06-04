@@ -1,22 +1,32 @@
 @props([
     'car',
-    'backUrl', // This will now serve as the FALLBACK URL
+    // 'backUrl' prop is no longer strictly needed if we always derive it,
+    // but can be kept for explicit overrides if desired.
+    // For this specific request, we'll derive it.
+    // 'backUrl',
     'backText' => 'Back',
 ])
+
+@php
+    // Determine the fallback URL based on user role
+    $determinedBackUrl = route('home'); // Default for non-admins and guests
+    if (Auth::check() && Auth::user()->hasRole('admin')) { // Replace hasRole('admin') with your admin check
+        $determinedBackUrl = route('admin.cars.index');
+    }
+@endphp
 
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
         <!-- Back Button -->
         <div class="mb-6">
             {{--
-                The href is set to the fallback URL.
-                The onclick event will try history.back() first.
-                If history.back() is not possible or doesn't change the page (e.g. first page in history stack),
-                it will then navigate to the fallbackUrl.
-                'return false;' prevents the default link navigation if JS handles it.
+                The onclick logic tries to use browser history first.
+                If history.back() is not viable (e.g., direct page load),
+                it will then fall back to the href of the anchor tag.
+                We set this href to our $determinedBackUrl.
             --}}
-            <a href="{{ $backUrl }}"
-               onclick="event.preventDefault(); goBackOrFallback('{{ $backUrl }}');"
+            <a href="{{ $determinedBackUrl }}"
+               onclick="event.preventDefault(); if (window.history.length > 1 && document.referrer && document.referrer !== window.location.href && document.referrer.startsWith(window.location.origin)) { window.history.back(); } else { window.location.href = '{{ $determinedBackUrl }}'; }"
                class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -25,7 +35,7 @@
             </a>
         </div>
 
-        <!-- Car Details Card Content (remains the same) -->
+        <!-- Car Details Card Content -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <!-- Main Car Image -->
             <div class="relative">
@@ -39,13 +49,11 @@
                              class="w-full h-full object-cover">
                     </div>
                 @else
-                    {{-- Placeholder if no images --}}
                     <div class="aspect-w-16 aspect-h-9 bg-gray-300 flex items-center justify-center">
                         <svg class="w-20 h-20 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </div>
                 @endif
 
-                <!-- Featured Badge -->
                 @if($car->is_featured)
                     <div class="absolute top-4 left-4">
                         <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -54,7 +62,6 @@
                     </div>
                 @endif
 
-                <!-- Status Badge -->
                 <div class="absolute top-4 right-4">
                     <span class="px-3 py-1 rounded-full text-sm font-semibold
                         @if($car->status === 'available') bg-green-500 text-white
@@ -66,9 +73,7 @@
                 </div>
             </div>
 
-            <!-- Car Details Content -->
             <div class="p-6">
-                <!-- Title and Price -->
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900 mb-2">
@@ -84,7 +89,6 @@
                     </div>
                 </div>
 
-                <!-- Description -->
                 @if($car->description)
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Description</h3>
@@ -92,7 +96,6 @@
                     </div>
                 @endif
 
-                <!-- Car Specifications -->
                 <div class="grid md:grid-cols-2 gap-6 mb-6">
                     <div>
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Specifications</h3>
@@ -109,7 +112,7 @@
                                 <span class="text-gray-600">Seats:</span>
                                 <span class="font-medium">{{ $car->seats }}</span>
                             </div>
-                            <div class="flex justify-between">
+                             <div class="flex justify-between">
                                 <span class="text-gray-600">Doors:</span>
                                 <span class="font-medium">{{ $car->doors }}</span>
                             </div>
@@ -123,7 +126,7 @@
                     <div>
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Vehicle Information</h3>
                         <div class="space-y-3">
-                            <div class="flex justify-between">
+                             <div class="flex justify-between">
                                 <span class="text-gray-600">License Plate:</span>
                                 <span class="font-medium">{{ $car->license_plate }}</span>
                             </div>
@@ -135,7 +138,6 @@
                     </div>
                 </div>
 
-                <!-- Features -->
                 @if($car->features->isNotEmpty())
                     <div class="mb-10">
                         <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Car Features</h3>
@@ -156,7 +158,6 @@
                     </div>
                 @endif
 
-                <!-- Additional Images (Gallery) -->
                 @if($car->images && $car->images->count() > 1)
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">More Photos</h3>
@@ -176,42 +177,57 @@
                 <div class="border-t pt-6 mt-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h3 class="text-xl font-semibold text-gray-900">Ready to book this car?</h3>
+                            <h3 class="text-xl font-semibold text-gray-900">
+                                @auth
+                                    @can('edit cars')
+                                        Manage this listing
+                                    @else
+                                        Ready to book this car?
+                                    @endcan
+                                @else
+                                     Ready to book this car?
+                                @endauth
+                            </h3>
                             <p class="text-gray-600">Available for ${{ number_format($car->price_per_day, 2) }} per day</p>
                         </div>
-                        @can('edit cars')
+
                         <div class="flex flex-col sm:flex-row sm:items-center gap-3 mt-4 sm:mt-0">
-                            <a href="{{route('admin.cars.edit', $car)}}"
-                               class="inline-flex items-center justify-center px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 order-last sm:order-first sm:mr-3 w-full sm:w-auto">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                </svg>
-                                Edit Car
-                            </a>
+                            @can('edit cars')
+                                <a href="{{ route('admin.cars.edit', $car) }}"
+                                   class="inline-flex items-center justify-center px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 order-last sm:order-first sm:mr-3 w-full sm:w-auto">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    Edit Car
+                                </a>
+                            @endcan
+
+                          @auth
+                            @cannot('edit cars')
+                                @if($car->status === 'available')
+                                    <a href="{{ route('bookings.create', $car) }}"
+                                       class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto">
+                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm5 1a1 1 0 00-1-1H6a1 1 0 00-1 1v1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V5a1 1 0 00-1-1h-1V3zm-3 7a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                        Book Now
+                                    </a>
+                                @else
+                                     <span class="inline-flex items-center justify-center px-6 py-3 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed w-full sm:w-auto">
+                                        Not Available
+                                    </span>
+                                @endif
+                            @endcannot
+                        @endauth
+
+                            @guest
+                                <a href="{{ route('login') }}?redirect={{ url()->current() }}"
+                                   class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full sm:w-auto">
+                                    Login to Book
+                                </a>
+                            @endguest
                         </div>
-                        @endcan
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-{{-- Add this script block if it's not already in your main layout or a global JS file --}}
-{{-- You can put this in @push('scripts') if your layout uses @stack('scripts') --}}
-<script>
-if (typeof goBackOrFallback !== 'function') {
-    function goBackOrFallback(fallbackUrl) {
-        // Check if there's a history to go back to
-        // window.history.length includes the current page, so > 1 means there's a previous page.
-        if (window.history.length > 1 && document.referrer !== '') {
-            window.history.back();
-        } else if (fallbackUrl) {
-            // If no history or referrer is empty (e.g., opened in new tab, or privacy settings), go to fallback
-            window.location.href = fallbackUrl;
-        }
-        // If no fallback and no history, the link effectively does nothing,
-        // or you could redirect to a default page like the homepage.
-    }
-}
-</script>

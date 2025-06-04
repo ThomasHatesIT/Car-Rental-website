@@ -202,7 +202,7 @@
 
                              <div class="mt-6 xl:mt-0 xl:ml-8">
                                                     <div class="flex flex-col sm:flex-row xl:flex-col space-y-3 sm:space-y-0 sm:space-x-3 xl:space-x-0 xl:space-y-3">
-                                                        <a href="" {{-- Assuming you have/want a show route --}}
+                                                        <a href="{{route('bookings.show', $booking)}}" {{-- Assuming you have/want a show route --}}
                                                         class="px-6 py-3 text-sm font-medium bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors duration-200 text-center">
                                                             View Details
                                                         </a>

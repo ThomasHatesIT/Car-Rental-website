@@ -18,6 +18,14 @@ use App\Mail\BookingMail;
 
 class BookingController extends Controller
 {
+     public function __construct(){
+        // Consider applying permissions to more methods like edit, update, destroy, carShow, carStore
+       
+        $this->middleware('permission:edit bookings')->only(['edit', 'update']);
+        $this->middleware('permission:delete booking')->only(['destroy']);
+        $this->middleware('permission:cancel bookings')->only(['destroy']);
+        // Add $this->middleware('permission:delete cars')->only(['destroy']); when you implement it
+    }
     /**
      * Show the form for creating a new booking.
      */
@@ -153,26 +161,29 @@ class BookingController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Booking $booking)
-    {
-        // Basic authorization: Ensure the user owns this booking or is an admin
-        // This requires a 'view' policy method on BookingPolicy or manual check.
-        // For now, we'll assume if a user gets to a valid booking ID, they can see it,
-        // or this route is protected by 'auth' middleware.
-        // $this->authorize('view', $booking);
+   // In your AdminBookingController.php
 
-        // To make this truly user-specific for a 'my booking details' page:
-        if (Auth::id() !== $booking->user_id) {
-            // If you have an admin role, you might allow them:
-            // if (!Auth::user()->hasRole('admin')) { // Assuming a role check
-            //     abort(403, 'Unauthorized action.');
-            // }
-            abort(403, 'You are not authorized to view this booking.');
-        }
-        
-        $booking->load(['car', 'user']); // Eager load relationships
-        return view('booking.show', compact('booking')); // Ensure you have a 'booking.show' view
-    }
+public function show(Booking $booking)
+{
+    $booking->load(['user', 'car.featuredImage', 'car.images']); // Eager load necessary relations
+
+    // Define these arrays, likely from a config, enum, or helper
+    $bookingStatuses = [
+        'pending' => 'Pending',
+        'confirmed' => 'Confirmed',
+        'active' => 'Active', // Car picked up
+        'completed' => 'Completed', // Car returned
+        'cancelled' => 'Cancelled',
+    ];
+    $paymentStatuses = [
+        'pending' => 'Pending',
+        'paid' => 'Paid',
+        'failed' => 'Failed',
+        'refunded' => 'Refunded',
+    ];
+
+    return view('user.bookings.show', compact('booking', 'bookingStatuses', 'paymentStatuses'));
+}
 
     /**
      * Show the form for editing the specified resource.
