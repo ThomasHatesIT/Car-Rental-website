@@ -1,5 +1,5 @@
-{{-- resources/views/admin/cars/show.blade.php (or your specific path) --}}
-
+{{-- resources/views/admin/cars/show.blade.php --}}
+@php use Illuminate\Support\Str; @endphp {{-- Added for Str::startsWith --}}
 @extends('layouts.admin')
 
 @section('title')
@@ -12,24 +12,15 @@
             <!-- Back Button -->
             <div class="mb-6">
                 @php
-                    // Get the previous URL. If not available, default to admin cars index.
-                    // Using session('previous_url_for_car_show') would be more robust if you set it before navigating.
                     $previousUrl = url()->previous();
                     $defaultBackUrl = route('admin.cars.index');
-
-                    // Ensure previous URL is from the same domain and not the current page to avoid loops
                     $backUrl = ($previousUrl && $previousUrl !== url()->current() && Str::startsWith($previousUrl, url('/')))
                                ? $previousUrl
                                : $defaultBackUrl;
 
-                    // If you specifically passed fromBookingId and want to prioritize that, you could combine:
-                    // if (isset($fromBookingId) && $fromBookingId) {
-                    //     $backUrl = url('/admin/bookings/' . $fromBookingId);
-                    // } elseif ($previousUrl && $previousUrl !== url()->current() && Str::startsWith($previousUrl, url('/'))) {
-                    //     $backUrl = $previousUrl;
-                    // } else {
-                    //     $backUrl = $defaultBackUrl;
-                    // }
+                    if (isset($fromBookingId) && $fromBookingId) { // fromBookingId passed from controller
+                         $backUrl = route('admin.bookings.show', ['booking' => $fromBookingId]);
+                    }
                 @endphp
                 <a href="{{ $backUrl }}"
                    class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
@@ -40,12 +31,54 @@
                 </a>
             </div>
 
-            <x-car-details-card :car="$car" /> {{-- Or your correct car details component name --}}
+            <x-car-details-card :car="$car">
+                {{-- Content for the 'actions' slot - Customized for this admin view --}}
+                <x-slot name="actions">
+                    {{-- NO "Edit Car" button here as per your request for this specific view --}}
 
+                    {{-- You might want to keep the Book Now / Not Available / Login for admins too,
+                         or add other admin-specific actions. For example: --}}
+
+                    @if (Auth::user()->hasRole('admin')) {{-- Example: Admin might see different info/actions --}}
+                        <span class="text-sm text-gray-600 italic">Admin view </span>
+                      <a href="{{ route('admin.cars.index') }}"> View cars here </a>
+                    @endif
+
+
+                    {{-- Keep the booking-related buttons if they make sense for an admin viewing car details --}}
+                    {{-- This part is the same as the default, just without the @can('edit cars') block --}}
+                    @auth
+                        {{-- If admin cannot "edit cars" (e.g. a lower-level admin) but can book --}}
+                        @cannot('edit cars')
+                            @if($car->status === 'available')
+                                <a href="{{ route('bookings.create', $car) }}"
+                                   class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto">
+                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm5 1a1 1 0 00-1-1H6a1 1 0 00-1 1v1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V5a1 1 0 00-1-1h-1V3zm-3 7a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                    Book Now (Admin)
+                                </a>
+                            @else
+                                 <span class="inline-flex items-center justify-center px-6 py-3 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed w-full sm:w-auto">
+                                    Not Available
+                                </span>
+                            @endif
+                        @endcannot
+                    @endauth
+
+                    {{-- Guest section probably not relevant if this is an admin-only view for cars --}}
+                    {{-- @guest
+                        <a href="{{ route('login') }}?redirect={{ url()->current() }}"
+                           class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full sm:w-auto">
+                            Login to Book
+                        </a>
+                    @endguest --}}
+
+                    {{-- Example: Add a different admin-specific action --}}
+                    @can('manage car_settings') {{-- Example permission --}}
+                        <a href="{{ route('admin.cars.settings', $car) }}" class="text-purple-600 hover:underline">Car Settings</a>
+                    @endcan
+
+                </x-slot>
+            </x-car-details-card>
         </div>
     </div>
 @endsection
-
-{{-- You'll need to import Str facade at the top of your Blade file if you use Str::startsWith --}}
-{{-- @php use Illuminate\Support\Str; @endphp --}}
-{{-- Or, more commonly, you'd do this check in the controller and pass the final $backUrl to the view. --}}
