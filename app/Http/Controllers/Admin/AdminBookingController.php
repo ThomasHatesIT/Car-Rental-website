@@ -202,7 +202,7 @@ public function bookingshowcardetails(Request $request, Car $car,) { // Only Car
     // - $fromBookingId should be the ID (e.g., "23").
     // - $request->fullUrl() should show the "?from_booking=23" part.
 
-    return view('admin.cars.show', [ // Make sure 'admin.cars.show' is the correct path
+    return view('admin.bookings.show-car-details', [ // Make sure 'admin.cars.show' is the correct path
         'car' => $car,
         'fromBookingId' => $fromBookingId, // CRITICAL: Pass it to the view
     ]);

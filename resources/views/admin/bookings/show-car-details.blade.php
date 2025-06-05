@@ -12,19 +12,24 @@
             <!-- Back Button -->
             <div class="mb-6">
                 @php
-                    // $fromBookingId is passed from the controller (AdminController@carShow).
-                    // It was retrieved from the 'from_booking' query parameter.
+                    // Get the previous URL. If not available, default to admin cars index.
+                    // Using session('previous_url_for_car_show') would be more robust if you set it before navigating.
+                    $previousUrl = url()->previous();
+                    $defaultBackUrl = route('admin.cars.index');
 
-                    $backUrl = route('admin.cars.index'); // Default fallback to cars index
+                    // Ensure previous URL is from the same domain and not the current page to avoid loops
+                    $backUrl = ($previousUrl && $previousUrl !== url()->current() && Str::startsWith($previousUrl, url('/')))
+                               ? $previousUrl
+                               : $defaultBackUrl;
 
-                    if (isset($fromBookingId) && $fromBookingId) {
-                        // Construct the URL directly if you want to be explicit
-                        // or if route() helper is causing issues (though it shouldn't if names are correct)
-                        $backUrl = url('/admin/bookings/' . $fromBookingId);
-
-                        // Alternatively, and recommended, ensure the route() helper works:
-                        // $backUrl = route('admin.bookings.show', ['booking' => $fromBookingId]);
-                    }
+                    // If you specifically passed fromBookingId and want to prioritize that, you could combine:
+                    // if (isset($fromBookingId) && $fromBookingId) {
+                    //     $backUrl = url('/admin/bookings/' . $fromBookingId);
+                    // } elseif ($previousUrl && $previousUrl !== url()->current() && Str::startsWith($previousUrl, url('/'))) {
+                    //     $backUrl = $previousUrl;
+                    // } else {
+                    //     $backUrl = $defaultBackUrl;
+                    // }
                 @endphp
                 <a href="{{ $backUrl }}"
                    class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
@@ -41,4 +46,6 @@
     </div>
 @endsection
 
-{{-- ... @push('scripts') ... --}}
+{{-- You'll need to import Str facade at the top of your Blade file if you use Str::startsWith --}}
+{{-- @php use Illuminate\Support\Str; @endphp --}}
+{{-- Or, more commonly, you'd do this check in the controller and pass the final $backUrl to the view. --}}
