@@ -385,4 +385,9 @@ class AdminController extends Controller
              return redirect()->route('admin.cars.index')->with('error', 'Failed to delete car.');
         }
     }
-}
+
+
+   
+
+
+    }

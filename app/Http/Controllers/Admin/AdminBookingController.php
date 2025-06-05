@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Car;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+
 
 class AdminBookingController extends Controller
 {
@@ -186,4 +188,23 @@ class AdminBookingController extends Controller
                              ->with('error', 'Failed to cancel booking.');
         }
     }
+
+
+
+
+public function bookingshowcardetails(Request $request, Car $car,) { // Only Car $car from route parameter
+    $fromBookingId = $request->query('from_booking');
+
+    // DEBUGGING: Dump the value right after retrieving it
+    // dd($fromBookingId, $request->fullUrl());
+    // If you uncomment the dd() above, when you click "View Full Car Details",
+    // the page should stop here.
+    // - $fromBookingId should be the ID (e.g., "23").
+    // - $request->fullUrl() should show the "?from_booking=23" part.
+
+    return view('admin.cars.show', [ // Make sure 'admin.cars.show' is the correct path
+        'car' => $car,
+        'fromBookingId' => $fromBookingId, // CRITICAL: Pass it to the view
+    ]);
+}
 }

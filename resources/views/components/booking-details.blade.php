@@ -1,25 +1,13 @@
+{{-- resources/views/components/booking-details.blade.php --}}
 @props([
     'booking',
-    'bookingStatuses', // Assumed to be passed from the controller for admin views
-    'paymentStatuses', // Assumed to be passed from the controller for admin views
-    'backUrl',
-    'indexQueryFilters' => [] // For admin views to preserve filters on form submission
+    'bookingStatuses' => null, // Nullable for non-admin views
+    'paymentStatuses' => null, // Nullable for non-admin views
+    'indexQueryFilters' => [], // For admin views to preserve filters on form submission
+    'viewCarUrl' => null,      // Optional URL for the "View Full Car Details" link
 ])
 
-<div class="container mx-auto px-4 py-8">
-    <!-- Back Button -->
-    <div class="mb-6">
-        <a href="{{ $backUrl }}"
-           class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-            Back
-        </a>
-    </div>
-
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Booking Details: #{{ $booking->booking_number }}</h1>
-
+<div> {{-- Add a root div for the component itself --}}
     {{-- Session Messages --}}
     @if(session('success'))
         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded-md shadow" role="alert">
@@ -102,7 +90,7 @@
                     @if (Auth::user()->hasRole('admin')) {{-- Or your preferred admin check --}}
                         <hr class="my-6">
                         {{-- Booking Status Update --}}
-                        @if(isset($bookingStatuses))
+                        @if(isset($bookingStatuses) && is_array($bookingStatuses))
                         <form action="{{ route('admin.bookings.updateStatus', array_merge(['booking' => $booking->id], $indexQueryFilters)) }}" method="POST" class="mb-6">
                             @csrf
                             @method('PATCH')
@@ -113,7 +101,7 @@
                                         'mt-1 block w-full sm:w-auto px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm',
                                         'bg-yellow-50 text-yellow-800 ring-1 ring-yellow-300' => $booking->status == 'pending',
                                         'bg-blue-50 text-blue-800 ring-1 ring-blue-300' => $booking->status == 'confirmed',
-                                        'bg-green-50 text-green-800 ring-1 ring-green-300' => $booking->status == 'active', // Assuming 'active' is a status
+                                        'bg-green-50 text-green-800 ring-1 ring-green-300' => $booking->status == 'active',
                                         'bg-gray-100 text-gray-800 ring-1 ring-gray-400' => $booking->status == 'completed',
                                         'bg-red-50 text-red-800 ring-1 ring-red-300' => $booking->status == 'cancelled',
                                     ])
@@ -137,7 +125,7 @@
                         @endif
 
                         {{-- Payment Status Update --}}
-                        @if(isset($paymentStatuses))
+                        @if(isset($paymentStatuses) && is_array($paymentStatuses))
                         <form action="{{ route('admin.bookings.updateStatus', array_merge(['booking' => $booking->id], $indexQueryFilters)) }}" method="POST"> {{-- Assuming same route handles payment_status too --}}
                             @csrf
                             @method('PATCH')
@@ -151,7 +139,7 @@
                                         'bg-red-50 text-red-800 ring-1 ring-red-300' => $booking->payment_status == 'failed',
                                         'bg-purple-50 text-purple-800 ring-1 ring-purple-300' => $booking->payment_status == 'refunded',
                                     ])
-                                    @if($booking->status === 'cancelled' || $booking->payment_status === 'refunded') disabled @endif
+                                     @if($booking->status === 'cancelled' || $booking->payment_status === 'refunded') disabled @endif
                                 >
                                     @foreach($paymentStatuses as $pStatusKey => $pStatusValue)
                                         <option value="{{ $pStatusKey }}" {{ $booking->payment_status == $pStatusKey ? 'selected' : '' }}>
@@ -159,7 +147,7 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                @if(!($booking->status === 'cancelled' || $booking->payment_status === 'refunded'))
+                                 @if(!($booking->status === 'cancelled' || $booking->payment_status === 'refunded'))
                                 <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                                     Update Payment Status
                                 </button>
@@ -180,7 +168,7 @@
                     <h3 class="text-xl font-semibold text-gray-700 mb-3">User Details</h3>
                     <p class="text-sm text-gray-600"><span class="font-medium">Name:</span> {{ $booking->user->name }}</p>
                     <p class="text-sm text-gray-600"><span class="font-medium">Email:</span> {{ $booking->user->email }}</p>
-                    {{-- You might want to add a link to view full user details for admins here --}}
+                    {{-- Add link to user profile for admin if needed --}}
                 </div>
                 @endif
 
@@ -200,27 +188,21 @@
                     <p class="text-sm text-gray-600">{{ $booking->car->year }} • {{ ucfirst($booking->car->color) }}</p>
                     <p class="text-sm text-gray-600"><span class="font-medium">License Plate:</span> {{ $booking->car->license_plate }}</p>
 
-                    {{-- === CONDITIONAL LINK FOR CAR DETAILS === --}}
-                    @auth
-                        @if (Auth::user()->hasRole('admin')) {{-- Replace with your admin check if different --}}
-                            <a href="{{ route('admin.cars.show', $booking->car) }}"
-                               class="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                                View Full Car Details (Admin) →
-                            </a>
-                        @else
-                            <a href="{{ route('cars.show', $booking->car) }}"
-                               class="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                                View Full Car Details →
-                            </a>
-                        @endif
-                    @else
-                        {{-- Fallback for guests, if they can see this component. Usually not for booking details. --}}
-                         <a href="{{ route('cars.show', $booking->car) }}"
-                               class="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                                View Full Car Details →
-                            </a>
-                    @endauth
-                    {{-- === END CONDITIONAL LINK === --}}
+                    @php
+                        $carRoute = $viewCarUrl; // Use the passed URL if available
+                        if (!$carRoute) {
+                            // Fallback to role-based routing if $viewCarUrl is not provided
+                            if (Auth::check() && Auth::user()->hasRole('admin')) {
+                                $carRoute = route('admin.cars.show', $booking->car);
+                            } else {
+                                $carRoute = route('cars.show', $booking->car); // Assuming a public car show route
+                            }
+                        }
+                    @endphp
+                    <a href="{{ $carRoute }}"
+                       class="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                        View Full Car Details
+                    </a>
                 </div>
                 @endif
             </div>
@@ -228,8 +210,7 @@
 
         {{-- Action Bar for Cancel Button (Admin or User if allowed) --}}
         @if($booking->status !== 'cancelled' && $booking->status !== 'completed')
-            @auth {{-- Cancellation is usually an authenticated action --}}
-                {{-- Check if admin OR if the user owns this booking and is allowed to cancel --}}
+            @auth
                 @if (Auth::user()->hasRole('admin') || (Auth::id() == $booking->user_id && $booking->canBeCancelledByUser()))
                     <div class="p-6 border-t border-gray-200 bg-gray-50 text-right">
                          <button type="button" onclick="openShowPageCancelModal_{{ $booking->id }}()"
@@ -243,6 +224,7 @@
     </div>
 </div>
 
+
 <!-- Cancel Booking Modal (for Show Page) -->
 @if($booking->status !== 'cancelled' && $booking->status !== 'completed')
     @auth
@@ -252,7 +234,6 @@
                     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
                     <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">​</span>
                     <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                        {{-- The form action should depend on who is cancelling --}}
                         <form id="showPageCancelBookingForm-{{ $booking->id }}"
                               action="{{ Auth::user()->hasRole('admin') ? route('admin.bookings.cancel', array_merge(['booking' => $booking->id], $indexQueryFilters)) : route('bookings.cancel', $booking->id) }}"
                               method="POST">
@@ -279,10 +260,9 @@
                                                 @endif
                                             </p>
                                             <label for="show_page_cancellation_reason-{{ $booking->id }}" class="block text-sm font-medium text-gray-700 mt-3">Cancellation Reason</label>
-                                            {{-- Use different input names for admin vs user if needed by backend --}}
                                             <textarea name="{{ Auth::user()->hasRole('admin') ? 'cancellation_reason_admin' : 'cancellation_reason_user' }}" id="show_page_cancellation_reason-{{ $booking->id }}" rows="3"
                                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                      @if(!Auth::user()->hasRole('admin')) required @endif></textarea> {{-- Example: making it required for users --}}
+                                                      @if(!Auth::user()->hasRole('admin')) required @endif></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -302,15 +282,13 @@
                 </div>
             </div>
 
-            {{-- SCRIPT IS NOW DIRECTLY IN THE COMPONENT --}}
             <script>
-                // Ensure function names are unique by appending booking ID.
                 if (typeof openShowPageCancelModal_{{ $booking->id }} !== 'function') {
                     function openShowPageCancelModal_{{ $booking->id }}() {
                         const modalElement = document.getElementById('showPageCancelBookingModal-{{ $booking->id }}');
                         if (modalElement) {
                             const reasonTextarea = document.getElementById('show_page_cancellation_reason-{{ $booking->id }}');
-                            if (reasonTextarea) reasonTextarea.value = ''; // Clear previous reason
+                            if (reasonTextarea) reasonTextarea.value = '';
                             modalElement.classList.remove('hidden');
                         }
                     }
@@ -325,7 +303,6 @@
                     }
                 }
 
-                // Event listener for escape key - specific to this booking's modal.
                 document.addEventListener('keydown', function (event) {
                     if (event.key === "Escape") {
                         const modalElement = document.getElementById('showPageCancelBookingModal-{{ $booking->id }}');

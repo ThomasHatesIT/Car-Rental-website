@@ -7,33 +7,6 @@
     'backText' => 'Back',
 ])
 
-@php
-    // Determine the fallback URL based on user role
-    $determinedBackUrl = route('home'); // Default for non-admins and guests
-    if (Auth::check() && Auth::user()->hasRole('admin')) { // Replace hasRole('admin') with your admin check
-        $determinedBackUrl = route('admin.cars.index');
-    }
-@endphp
-
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Back Button -->
-        <div class="mb-6">
-            {{--
-                The onclick logic tries to use browser history first.
-                If history.back() is not viable (e.g., direct page load),
-                it will then fall back to the href of the anchor tag.
-                We set this href to our $determinedBackUrl.
-            --}}
-            <a href="{{ $determinedBackUrl }}"
-               onclick="event.preventDefault(); if (window.history.length > 1 && document.referrer && document.referrer !== window.location.href && document.referrer.startsWith(window.location.origin)) { window.history.back(); } else { window.location.href = '{{ $determinedBackUrl }}'; }"
-               class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                {{ $backText }}
-            </a>
-        </div>
 
         <!-- Car Details Card Content -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
