@@ -126,7 +126,7 @@ class BookingController extends Controller
             // Send notification to admin
             $adminEmailAddress = 'thomasbernardo910@gmail.com'; // Consider making this configurtable
 
-                Mail::to($adminEmailAddress)->send(new BookingMail($booking));
+               Mail::to($adminEmailAddress)->queue(new BookingMail($booking));
                
             return redirect()->route('home')
                 ->with('success', 'Booking request submitted successfully! Your booking is pending approval by the admin.');
