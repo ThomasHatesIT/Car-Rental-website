@@ -41,7 +41,7 @@
 
                     @if (Auth::user()->hasRole('admin')) {{-- Example: Admin might see different info/actions --}}
                         <span class="text-sm text-gray-600 italic">Admin view </span>
-                      <a href="{{ route('admin.cars.index') }}"> View cars here </a>
+                      <a href="{{ route('admin.cars.show', $car) }}"> View car here </a>
                     @endif
 
 
@@ -72,11 +72,7 @@
                         </a>
                     @endguest --}}
 
-                    {{-- Example: Add a different admin-specific action --}}
-                    @can('manage car_settings') {{-- Example permission --}}
-                        <a href="{{ route('admin.cars.settings', $car) }}" class="text-purple-600 hover:underline">Car Settings</a>
-                    @endcan
-
+               
                 </x-slot>
             </x-car-details-card>
         </div>
