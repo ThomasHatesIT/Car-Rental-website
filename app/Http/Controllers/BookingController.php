@@ -182,7 +182,7 @@ public function show(Booking $booking)
         'refunded' => 'Refunded',
     ];
 
-    return view('user.bookings.show', compact('booking', 'bookingStatuses', 'paymentStatuses'));
+    return view('booking.show', compact('booking', 'bookingStatuses', 'paymentStatuses'));
 }
 
     /**

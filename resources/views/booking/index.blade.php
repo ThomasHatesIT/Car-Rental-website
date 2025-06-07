@@ -208,7 +208,7 @@
                                                         </a>
 
                                                         {{-- ... Pay Now button ... --}}
-  @if($booking->status == 'pending' && $booking->payment_status == 'pending' && !$booking->cancelled_at)
+  @if($booking->status == 'confirmed' && $booking->payment_status == 'pending' && !$booking->cancelled_at)
                         {{--
                             You'll need a route for payment processing.
                             Example: route('payments.create', ['booking' => $booking->id])
