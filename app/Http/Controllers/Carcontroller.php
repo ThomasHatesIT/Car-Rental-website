@@ -18,9 +18,70 @@ class Carcontroller extends BaseController // <--- CHANGE 'Controller' to 'BaseC
         $this->middleware('permission:delete cars')->only(['destroy']); 
     }
 
-    /**
-     * Display a listing of the resource.
-     */
+
+ public function browseCars(Request $request)
+    {
+        // Start a new query for the Car model
+        $query = Car::query();
+
+        // Eager load the images to prevent N+1 query problems
+        $query->with('images');
+
+        // Apply search keyword filter
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('make', 'like', "%{$searchTerm}%")
+                  ->orWhere('model', 'like', "%{$searchTerm}%")
+                  ->orWhere('year', 'like', "%{$searchTerm}%")
+                  ->orWhere('fuel_type', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Apply transmission filter
+        if ($request->filled('transmission') && $request->input('transmission') !== 'any') {
+            $query->where('transmission', $request->input('transmission'));
+        }
+
+        // Apply price range filter
+        if ($request->filled('min_price')) {
+            $query->where('price_per_day', '>=', $request->input('min_price'));
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price_per_day', '<=', $request->input('max_price'));
+        }
+        
+        // Apply sorting
+        $sortBy = $request->input('sort_by', 'created_at_desc'); // Default sort
+        switch ($sortBy) {
+            case 'price_asc':
+                $query->orderBy('price_per_day', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price_per_day', 'desc');
+                break;
+            case 'year_desc':
+                $query->orderBy('year', 'desc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+        }
+
+        // Only show available cars
+        $query->where('status', 'available');
+
+        // Paginate the results
+        $cars = $query->paginate(9)->withQueryString();
+
+        return view('user.browse-cars.index', compact('cars'));
+    }
+
+  
+
+
+
+
+  
     public function home()
     {
         $cars = Car::with(['featuredImage', 'images'])

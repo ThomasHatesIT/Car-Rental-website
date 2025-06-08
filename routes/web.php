@@ -24,6 +24,7 @@ Route::post('/logout', [SessionController::class, 'destroy'])->name('logout')->m
 // Public/User Facing Car Routes (accessible to everyone)
 Route::get('/', [CarController::class, 'home'])->name('home');
 Route::get('/car/{id}', [CarController::class, 'show'])->name('cars.show');
+Route::get('/cars', [CarController::class, 'browseCars'])->name('browseCars.index');
 
 
 

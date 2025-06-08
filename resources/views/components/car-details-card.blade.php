@@ -89,6 +89,10 @@
                         <span class="text-gray-600">Mileage:</span>
                         <span class="font-medium">{{ number_format($car->mileage) }} miles</span>
                     </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Created At</span>
+                        <span class="font-medium">{{ $car->created_at->format('F j, Y') }}</span>
+                    </div>
                 </div>
             </div>
 
