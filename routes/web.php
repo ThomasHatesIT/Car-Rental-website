@@ -65,6 +65,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     ->name('bookings.showCarForBooking'); // Full name: admin.bookings.showCarForBooking    
     Route::patch('/bookings/{booking}/update-status', [AdminBookingController::class, 'updateStatus'])->name('bookings.updateStatus');
     Route::patch('/bookings/{booking}/cancel', [AdminBookingController::class, 'cancelBooking'])->name('bookings.cancel');
+
+    Route::get('/users', [AdminController::class, 'indexUsers'])->name('users.index');
+
+
 });
 
 // Example of a route for authenticated users (non-admin specific, if needed)

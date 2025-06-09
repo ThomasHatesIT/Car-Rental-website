@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
+use App\Models\User;
 use App\Models\Feature;
 use App\Models\CarImage;
 use Illuminate\Http\Request;
@@ -388,6 +389,77 @@ class AdminController extends Controller
 
 
    
-
-
+      public function indexUsers(Request $request)
+{
+    // Get all available roles for the filter dropdown
+    $roles = \Spatie\Permission\Models\Role::all();
+    
+    // Start building the query
+    $query = User::with(['roles', 'bookings'])
+                 ->withCount('bookings');
+    
+    // Apply search filter
+    if ($request->filled('search')) {
+        $searchTerm = $request->get('search');
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('name', 'LIKE', "%{$searchTerm}%")
+              ->orWhere('email', 'LIKE', "%{$searchTerm}%");
+        });
+    }
+    
+    // Apply role filter
+    if ($request->filled('role')) {
+        $query->whereHas('roles', function($q) use ($request) {
+            $q->where('name', $request->get('role'));
+        });
+    }
+    
+    // Apply status filter
+    if ($request->filled('status')) {
+        $status = $request->get('status');
+        if ($status === 'verified') {
+            $query->whereNotNull('email_verified_at');
+        } elseif ($status === 'unverified') {
+            $query->whereNull('email_verified_at');
+        }
+    }
+    
+    // Apply sorting
+    $sortBy = $request->get('sort_by', 'created_at');
+    $sortOrder = $request->get('sort_order', 'desc');
+    
+    // Validate sort parameters
+    $allowedSortFields = ['name', 'email', 'created_at', 'bookings_count'];
+    $allowedSortOrders = ['asc', 'desc'];
+    
+    if (in_array($sortBy, $allowedSortFields) && in_array($sortOrder, $allowedSortOrders)) {
+        if ($sortBy === 'bookings_count') {
+            $query->orderBy('bookings_count', $sortOrder);
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+    } else {
+        // Default sorting
+        $query->orderBy('created_at', 'desc');
+    }
+    
+    // Paginate results
+    $perPage = $request->get('per_page', 15);
+    $perPage = in_array($perPage, [10, 15, 25, 50]) ? $perPage : 15;
+    
+    $users = $query->paginate($perPage);
+    
+    // If this is an AJAX request (for live search), return JSON
+    if ($request->ajax()) {
+        return response()->json([
+            'html' => view('admin.users.partials.table', compact('users'))->render(),
+            'pagination' => $users->withQueryString()->links()->render()
+        ]);
+    }
+    
+    return view('admin.users.index', [
+        'users' => $users,
+        'roles' => $roles,
+    ]);
+}
     }
