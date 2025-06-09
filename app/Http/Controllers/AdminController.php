@@ -6,6 +6,8 @@ use App\Models\Car;
 use App\Models\User;
 use App\Models\Feature;
 use App\Models\CarImage;
+use App\Models\Booking;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,9 +27,55 @@ class AdminController extends Controller
         // Add $this->middleware('permission:delete cars')->only(['destroy']); when you implement it
     }
 
-    public function adminHome(){
-        return view('layouts.admin'); // This probably should be 'admin.dashboard' or similar
-    }
+   public function adminHome()
+{
+    // KPIs
+    $totalCars = Car::count();
+    $availableCars = Car::where('status', 'available')->count();
+    // Rented cars: cars associated with an active booking
+    $rentedCarsCount = Car::whereHas('bookings', function ($query) {
+        $query->where('status', 'active'); // Assuming BookingStatus Enum or string
+    })->count();
+
+    $totalUsers = User::whereHas('roles', function ($query) {
+        $query->where('name', 'user');
+    })->count(); // Count only 'user' role
+
+    $pendingBookingsCount = Booking::where('status', 'pending')->count(); // Or BookingStatus::PENDING
+    $activeBookingsCount = Booking::where('status', 'active')->count();   // Or BookingStatus::ACTIVE
+
+    // Recent Activity
+    $latestPendingBookings = Booking::with(['user', 'car'])
+        ->where('status', 'pending') // Or BookingStatus::PENDING
+        ->orderBy('created_at', 'desc')
+        ->take(5)
+        ->get();
+
+    $recentlyAddedCars = Car::orderBy('created_at', 'desc')
+        ->take(5)
+        ->get();
+
+    $carsDueForReturn = Booking::with(['user', 'car'])
+        ->where('status', 'active') // Or BookingStatus::ACTIVE
+        ->whereDate('end_date', '<=', Carbon::tomorrow()) // Today or tomorrow
+        ->whereDate('end_date', '>=', Carbon::today())   // Not already past
+        ->orderBy('end_date', 'asc')
+        ->take(5)
+        ->get();
+
+    return view('admin.dashboard', compact(
+        'totalCars',
+        'availableCars',
+        'rentedCarsCount',
+        'totalUsers',
+        'pendingBookingsCount',
+        'activeBookingsCount',
+        'latestPendingBookings',
+        'recentlyAddedCars',
+        'carsDueForReturn'
+        // Add more data as you implement charts etc.
+    ));
+}
 
     public function index()
     {
